@@ -15,9 +15,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         this.userRepository = userRepository;
     }
 
+    /** The "username" in this system is the user's e-mail address. */
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        throw new UnsupportedOperationException("UserDetails loading not implemented yet");
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException(
+                        "No user found with e-mail: " + email));
     }
 }
-
