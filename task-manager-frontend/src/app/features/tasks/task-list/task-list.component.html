@@ -1,0 +1,55 @@
+<div class="page-wrapper">
+  <header class="page-header">
+    <h1 class="page-title">Minhas Tarefas</h1>
+    <button mat-flat-button class="btn-new" routerLink="/tasks/new">
+      <mat-icon>add</mat-icon>
+      Nova tarefa
+    </button>
+  </header>
+
+  <mat-table [dataSource]="tasks" class="task-table">
+    <ng-container matColumnDef="title">
+      <mat-header-cell *matHeaderCellDef>Título</mat-header-cell>
+      <mat-cell *matCellDef="let task">{{ task.title }}</mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
+      <mat-cell *matCellDef="let task">
+        <mat-chip [class]="'chip-' + task.status.toLowerCase()">
+          {{ task.status }}
+        </mat-chip>
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="dueDate">
+      <mat-header-cell *matHeaderCellDef>Vencimento</mat-header-cell>
+      <mat-cell *matCellDef="let task">{{ task.dueDate ?? '—' }}</mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <mat-header-cell *matHeaderCellDef></mat-header-cell>
+      <mat-cell *matCellDef="let task">
+        <button mat-icon-button [matMenuTriggerFor]="menu">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #menu>
+          <button mat-menu-item [routerLink]="['/tasks', task.id, 'edit']">
+            <mat-icon>edit</mat-icon> Editar
+          </button>
+          <button mat-menu-item (click)="onDelete(task.id)">
+            <mat-icon>delete</mat-icon> Excluir
+          </button>
+        </mat-menu>
+      </mat-cell>
+    </ng-container>
+
+    <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+    <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+
+    <tr class="mat-row empty-row" *matNoDataRow>
+      <td [colSpan]="displayedColumns.length">Nenhuma tarefa encontrada.</td>
+    </tr>
+  </mat-table>
+</div>
+

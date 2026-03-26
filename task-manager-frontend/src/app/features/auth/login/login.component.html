@@ -1,0 +1,32 @@
+<div class="auth-wrapper">
+  <mat-card class="auth-card">
+    <mat-card-header>
+      <mat-card-title>Entrar</mat-card-title>
+      <mat-card-subtitle>Acesse sua conta</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>E-mail</mat-label>
+          <input matInput type="email" formControlName="email" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Senha</mat-label>
+          <input matInput type="password" formControlName="password" />
+        </mat-form-field>
+
+        <button mat-flat-button class="submit-btn" type="submit">
+          Entrar
+        </button>
+      </form>
+    </mat-card-content>
+
+    <mat-card-actions>
+      <span>Não tem conta?</span>
+      <a routerLink="/auth/register">Cadastre-se</a>
+    </mat-card-actions>
+  </mat-card>
+</div>
+

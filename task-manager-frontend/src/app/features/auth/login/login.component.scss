@@ -1,0 +1,39 @@
+@use '../../../../styles' as t;
+
+.auth-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: t.$bg-darkest;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background-color: t.$bg-surface;
+  border: 1px solid t.$border-default;
+  border-radius: t.$radius-lg;
+
+  mat-card-title   { color: t.$text-primary; }
+  mat-card-subtitle { color: t.$text-secondary; }
+}
+
+.full-width  { width: 100%; }
+
+.submit-btn {
+  width: 100%;
+  margin-top: t.$space-2;
+  background-color: t.$primary;
+  color: t.$text-primary;
+}
+
+mat-card-actions {
+  display: flex;
+  gap: t.$space-2;
+  padding: t.$space-4;
+  color: t.$text-secondary;
+
+  a { color: t.$primary-light; text-decoration: none; }
+}
+

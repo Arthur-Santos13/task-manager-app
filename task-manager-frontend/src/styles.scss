@@ -1,0 +1,93 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Design tokens — colour palette extracted from the Railway-style dark theme
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Backgrounds
+$bg-darkest  : #080810;
+$bg-surface  : #10101b;
+$bg-elevated : #16162a;
+
+// Purple accent (primary)
+$primary         : #7c3aed;
+$primary-light   : #a855f7;
+$primary-dark    : #5b21b6;
+$primary-glow    : rgba(124, 58, 237, 0.25);
+
+// Grid / borders
+$border-subtle   : #1e1e32;
+$border-default  : #2a2a42;
+
+// Typography
+$text-primary    : #ffffff;
+$text-secondary  : #8888a8;
+$text-muted      : #55556a;
+
+// Status colours
+$color-success   : #22c55e;
+$color-warning   : #f59e0b;
+$color-danger    : #ef4444;
+$color-info      : $primary-light;
+
+// Spacing scale
+$space-1 : 4px;
+$space-2 : 8px;
+$space-3 : 12px;
+$space-4 : 16px;
+$space-5 : 20px;
+$space-6 : 24px;
+$space-8 : 32px;
+
+// Radius
+$radius-sm : 6px;
+$radius-md : 10px;
+$radius-lg : 16px;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Global reset & base styles
+// ─────────────────────────────────────────────────────────────────────────────
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  background-color: $bg-darkest;
+  color: $text-primary;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Angular Material theme overrides (dark)
+// ─────────────────────────────────────────────────────────────────────────────
+@use '@angular/material' as mat;
+
+$task-manager-theme: mat.define-theme((
+  color: (
+    theme-type: dark,
+    primary: mat.$violet-palette,
+  ),
+  typography: (
+    brand-family: 'Inter',
+    plain-family: 'Inter',
+  ),
+  density: (scale: 0),
+));
+
+:root {
+  @include mat.all-component-themes($task-manager-theme);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Scrollbar
+// ─────────────────────────────────────────────────────────────────────────────
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: $bg-surface; }
+::-webkit-scrollbar-thumb  { background: $border-default; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: $primary; }
+
