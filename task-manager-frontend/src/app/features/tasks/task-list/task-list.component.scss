@@ -1,0 +1,48 @@
+@use '../../../../styles' as t;
+
+.page-wrapper {
+  padding: t.$space-8;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: t.$space-6;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: t.$text-primary;
+}
+
+.btn-new {
+  background-color: t.$primary;
+  color: t.$text-primary;
+  gap: t.$space-1;
+}
+
+.task-table {
+  width: 100%;
+  background-color: t.$bg-surface;
+  border: 1px solid t.$border-subtle;
+  border-radius: t.$radius-md;
+
+  .mat-mdc-header-cell { color: t.$text-secondary; }
+  .mat-mdc-cell        { color: t.$text-primary; }
+}
+
+.empty-row td {
+  padding: t.$space-8;
+  text-align: center;
+  color: t.$text-muted;
+}
+
+// Status chip colours
+.chip-todo        { background: rgba(136, 136, 168, 0.15) !important; color: t.$text-secondary !important; }
+.chip-in_progress { background: t.$primary-glow !important;           color: t.$primary-light   !important; }
+.chip-done        { background: rgba(34, 197, 94, 0.15)  !important;  color: t.$color-success   !important; }
+

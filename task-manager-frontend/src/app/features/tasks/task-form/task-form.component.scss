@@ -1,0 +1,48 @@
+@use '../../../../styles' as t;
+
+.page-wrapper {
+  padding: t.$space-8;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: t.$space-3;
+  margin-bottom: t.$space-6;
+
+  button { color: t.$text-secondary; }
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: t.$text-primary;
+}
+
+.form-card {
+  background-color: t.$bg-surface;
+  border: 1px solid t.$border-subtle;
+  border-radius: t.$radius-md;
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: t.$space-2;
+}
+
+.form-actions {
+  display: flex;
+  gap: t.$space-3;
+  justify-content: flex-end;
+  margin-top: t.$space-4;
+
+  button[mat-stroked-button] { color: t.$text-secondary; }
+}
+
+.btn-save {
+  background-color: t.$primary;
+  color: t.$text-primary;
+}
+
