@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: task-manager-postgres
+    environment:
+      POSTGRES_DB: taskmanager
+      POSTGRES_USER: taskmanager
+      POSTGRES_PASSWORD: taskmanager
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: task-manager-api
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: taskmanager
+      DB_USER: taskmanager
+      DB_PASSWORD: taskmanager
+      JWT_SECRET: change-this-secret-before-production
+      JWT_EXPIRATION_MS: 3600000
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+volumes:
+  pg_data:
+
