@@ -1,10 +1,13 @@
 package com.taskmanager.dto;
 
+import com.taskmanager.entity.Role;
+
 public record AuthResponse(
         String token,
         String tokenType,
         Long userId,
-        String email
+        String name,
+        String email,
+        Role role
 ) {
 }
-
