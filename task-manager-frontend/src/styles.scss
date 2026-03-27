@@ -1,3 +1,6 @@
+// @use must be the first statement in a Sass file
+@use '@angular/material' as mat;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Design tokens — colour palette extracted from the Railway-style dark theme
 // ─────────────────────────────────────────────────────────────────────────────
@@ -65,8 +68,6 @@ html, body {
 // ─────────────────────────────────────────────────────────────────────────────
 // Angular Material theme overrides (dark)
 // ─────────────────────────────────────────────────────────────────────────────
-@use '@angular/material' as mat;
-
 $task-manager-theme: mat.define-theme((
   color: (
     theme-type: dark,
@@ -90,4 +91,3 @@ $task-manager-theme: mat.define-theme((
 ::-webkit-scrollbar-track  { background: $bg-surface; }
 ::-webkit-scrollbar-thumb  { background: $border-default; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: $primary; }
-

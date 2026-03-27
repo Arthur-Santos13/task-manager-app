@@ -31,7 +31,7 @@ import { TaskStatus } from '../../../core/models/task.model';
 })
 export class TaskFormComponent {
 
-  statusOptions: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'DONE'];
+  statusOptions: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
   isEditMode = false;
   form: FormGroup;
 
