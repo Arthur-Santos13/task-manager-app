@@ -105,7 +105,7 @@ class TaskServiceImplTest {
 
         assertThatThrownBy(() -> taskService.createTask(taskRequest, creator))
                 .isInstanceOf(ResourceNotFoundException.class);
-        verify(taskRepository, never()).save(any());
+        verify(taskRepository, never()).save(any(Task.class));
     }
 
     // -------------------------------------------------------------------------
@@ -182,7 +182,7 @@ class TaskServiceImplTest {
 
         assertThatThrownBy(() -> taskService.updateTask(1L, taskRequest, stranger))
                 .isInstanceOf(AccessDeniedException.class);
-        verify(taskRepository, never()).save(any());
+        verify(taskRepository, never()).save(any(Task.class));
     }
 
     // -------------------------------------------------------------------------
@@ -207,7 +207,7 @@ class TaskServiceImplTest {
 
         assertThatThrownBy(() -> taskService.deleteTask(1L, stranger))
                 .isInstanceOf(AccessDeniedException.class);
-        verify(taskRepository, never()).delete(any());
+        verify(taskRepository, never()).delete(any(Task.class));
     }
 
     // -------------------------------------------------------------------------
