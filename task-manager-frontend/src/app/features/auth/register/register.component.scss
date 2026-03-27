@@ -19,6 +19,12 @@
   mat-card-subtitle { color: t.$text-secondary; }
 }
 
+.brand {
+  display: flex;
+  justify-content: center;
+  padding-top: t.$space-6;
+}
+
 .full-width { width: 100%; }
 
 .error-alert {
