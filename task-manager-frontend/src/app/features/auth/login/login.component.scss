@@ -19,13 +19,31 @@
   mat-card-subtitle { color: t.$text-secondary; }
 }
 
-.full-width  { width: 100%; }
+.full-width { width: 100%; }
+
+.error-alert {
+  display: flex;
+  align-items: center;
+  gap: t.$space-2;
+  background-color: rgba(239, 68, 68, 0.12);
+  border: 1px solid t.$color-danger;
+  border-radius: t.$radius-sm;
+  color: t.$color-danger;
+  font-size: 13px;
+  padding: t.$space-3 t.$space-4;
+  margin-bottom: t.$space-4;
+}
 
 .submit-btn {
   width: 100%;
   margin-top: t.$space-2;
   background-color: t.$primary;
   color: t.$text-primary;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: t.$space-2;
+  min-height: 40px;
 }
 
 mat-card-actions {
