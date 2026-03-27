@@ -13,6 +13,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -48,6 +49,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new IllegalArgumentException(
@@ -61,10 +63,10 @@ public class AuthServiceImpl implements AuthService {
                 .role(Role.USER)
                 .build();
 
-        userRepository.save(user);
+        User saved = userRepository.save(user);
 
-        String token = jwtService.generateToken(user);
-        return buildAuthResponse(token, user);
+        String token = jwtService.generateToken(saved);
+        return buildAuthResponse(token, saved);
     }
 
     // -------------------------------------------------------------------------
