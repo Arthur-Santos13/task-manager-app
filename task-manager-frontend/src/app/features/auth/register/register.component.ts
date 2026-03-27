@@ -1,15 +1,17 @@
 import { Component, signal } from '@angular/core';
 import { RouterLink, Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { AppLogoComponent } from '../../../shared/components/app-logo.component';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
+import { ApiError } from '../../../core/models/auth.model';
+import { AppLogoComponent } from '../../../shared/components/app-logo.component';
 
 @Component({
   selector: 'app-register',
@@ -68,10 +70,21 @@ export class RegisterComponent {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: () => this.router.navigate(['/tasks']),
-        error: (err) => {
-          const msg = err?.error?.message ?? 'Erro ao criar conta. Tente novamente.';
-          this.errorMessage.set(msg);
-        },
+        error: (err: HttpErrorResponse) => this.errorMessage.set(this._parseError(err)),
       });
+  }
+
+  private _parseError(err: HttpErrorResponse): string {
+    if (err.status === 0) {
+      return 'Não foi possível conectar ao servidor. Tente novamente mais tarde.';
+    }
+
+    const body = err.error as ApiError | null;
+
+    if (body?.fieldErrors) {
+      return Object.values(body.fieldErrors).join(' · ');
+    }
+
+    return body?.message ?? 'Erro ao criar conta. Tente novamente.';
   }
 }
