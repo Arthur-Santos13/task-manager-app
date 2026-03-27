@@ -79,7 +79,7 @@ import { Component } from '@angular/core';
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 14px;
     }
 
     svg {
