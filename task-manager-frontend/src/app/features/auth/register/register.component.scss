@@ -15,17 +15,23 @@
   border: 1px solid t.$border-default;
   border-radius: t.$radius-lg;
 
-  mat-card-title    { color: t.$text-primary; }
-  mat-card-subtitle { color: t.$text-secondary; }
+  mat-card-title    { color: t.$text-primary; font-size: 20px; }
+  mat-card-subtitle { color: t.$text-secondary; margin-top: t.$space-1; }
+
+  mat-card-header  { padding: t.$space-4 t.$space-6 t.$space-2; }
+  mat-card-content { padding: t.$space-2 t.$space-6 t.$space-4; }
 }
 
 .brand {
   display: flex;
   justify-content: center;
-  padding-top: t.$space-6;
+  padding: t.$space-8 t.$space-6 t.$space-4;
 }
 
-.full-width { width: 100%; }
+.full-width {
+  width: 100%;
+  margin-bottom: t.$space-2;
+}
 
 .error-alert {
   display: flex;
@@ -37,27 +43,26 @@
   color: t.$color-danger;
   font-size: 13px;
   padding: t.$space-3 t.$space-4;
-  margin-bottom: t.$space-4;
+  margin-bottom: t.$space-5;
 }
 
 .submit-btn {
   width: 100%;
-  margin-top: t.$space-2;
+  margin-top: t.$space-4;
   background-color: t.$primary;
   color: t.$text-primary;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: t.$space-2;
-  min-height: 40px;
+  min-height: 44px;
 }
 
 mat-card-actions {
   display: flex;
   gap: t.$space-2;
-  padding: t.$space-4;
+  padding: t.$space-4 t.$space-6 t.$space-6;
   color: t.$text-secondary;
 
   a { color: t.$primary-light; text-decoration: none; }
 }
-
