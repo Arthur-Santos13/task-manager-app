@@ -1,6 +1,7 @@
 package com.taskmanager.exception;
 
 import com.taskmanager.dto.ErrorResponse;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -54,6 +55,18 @@ public class GlobalExceptionHandler {
                         HttpStatus.CONFLICT.value(),
                         "Conflict",
                         ex.getMessage()));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
+        String message = ex.getMostSpecificCause().getMessage();
+        boolean isDuplicateEmail = message != null && message.contains("email");
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        HttpStatus.CONFLICT.value(),
+                        "Conflict",
+                        isDuplicateEmail ? "E-mail já está em uso." : "Violação de integridade de dados."));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
