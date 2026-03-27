@@ -17,6 +17,12 @@ spring:
         format_sql: true
     show-sql: false
 
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
 server:
   port: ${SERVER_PORT:8080}
 
