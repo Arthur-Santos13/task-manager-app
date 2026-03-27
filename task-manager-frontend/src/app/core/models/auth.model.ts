@@ -25,3 +25,13 @@ export interface AuthUser {
   email: string;
   role: 'USER' | 'ADMIN';
 }
+
+/** Shape of the backend ErrorResponse DTO. */
+export interface ApiError {
+  status: number;
+  error: string;
+  message: string;
+  timestamp: string;
+  fieldErrors: Record<string, string> | null;
+}
+
