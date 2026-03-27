@@ -37,7 +37,11 @@ export class LoginComponent {
     password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
-  constructor(private readonly fb: FormBuilder) {}
+  constructor(
+    private readonly fb: FormBuilder,
+    private readonly authService: AuthService,
+    private readonly router: Router,
+  ) {}
 
   get emailCtrl()    { return this.form.controls.email; }
   get passwordCtrl() { return this.form.controls.password; }
@@ -51,7 +55,20 @@ export class LoginComponent {
       this.form.markAllAsTouched();
       return;
     }
-    // Backend integration — next commit
+
+    this.loading.set(true);
+    this.errorMessage.set(null);
+
+    this.authService
+      .login(this.form.getRawValue())
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: () => this.router.navigate(['/tasks']),
+        error: (err) => {
+          const msg = err?.error?.message ?? 'Credenciais inválidas. Tente novamente.';
+          this.errorMessage.set(msg);
+        },
+      });
   }
 }
 
