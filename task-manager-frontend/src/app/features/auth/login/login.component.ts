@@ -77,6 +77,13 @@ export class LoginComponent {
       return 'Não foi possível conectar ao servidor. Tente novamente mais tarde.';
     }
 
+    // Backend returned text/plain — err.error is a raw string
+    if (typeof err.error === 'string') {
+      return err.status === 500
+        ? 'Erro interno no servidor. Tente novamente mais tarde.'
+        : (err.error || 'Credenciais inválidas. Tente novamente.');
+    }
+
     const body = err.error as ApiError | null;
 
     if (body?.fieldErrors) {
