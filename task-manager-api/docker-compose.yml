@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: taskmanager
       POSTGRES_PASSWORD: taskmanager
     ports:
-      - "5432:5432"
+      - "5435:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
 

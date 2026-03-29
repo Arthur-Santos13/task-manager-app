@@ -1,46 +1,125 @@
 <div class="page-wrapper">
-  <div class="page-header">
-    <button mat-icon-button routerLink="/tasks">
-      <mat-icon>arrow_back</mat-icon>
-    </button>
-    <h1 class="page-title">{{ isEditMode ? 'Editar tarefa' : 'Nova tarefa' }}</h1>
-  </div>
+  <!-- Loading overlay when fetching task for edit -->
+  @if (loading()) {
+    <div class="loading-wrap">
+      <mat-spinner diameter="48" />
+    </div>
+  }
 
-  <mat-card class="form-card">
-    <mat-card-content>
-      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Título</mat-label>
-          <input matInput formControlName="title" />
-        </mat-form-field>
+  @if (!loading()) {
+    <!-- Page header -->
+    <div class="page-header">
+      <button mat-icon-button routerLink="/tasks" class="back-btn" aria-label="Voltar">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h1 class="page-title">{{ isEditMode ? 'Editar tarefa' : 'Nova tarefa' }}</h1>
+    </div>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Descrição</mat-label>
-          <textarea matInput formControlName="description" rows="4"></textarea>
-        </mat-form-field>
+    <!-- Form card -->
+    <mat-card class="form-card">
+      <mat-card-content>
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Status</mat-label>
-          <mat-select formControlName="status">
-            @for (s of statusOptions; track s) {
-              <mat-option [value]="s">{{ s }}</mat-option>
+          <!-- Título -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Título *</mat-label>
+            <input matInput formControlName="title" placeholder="Nome da tarefa" />
+            @if (titleCtrl.hasError('required') && titleCtrl.touched) {
+              <mat-error>Título é obrigatório</mat-error>
+            } @else if (titleCtrl.hasError('minlength') && titleCtrl.touched) {
+              <mat-error>Mínimo de 3 caracteres</mat-error>
             }
-          </mat-select>
-        </mat-form-field>
+          </mat-form-field>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Data de vencimento</mat-label>
-          <input matInput [matDatepicker]="picker" formControlName="dueDate" />
-          <mat-datepicker-toggle matIconSuffix [for]="picker" />
-          <mat-datepicker #picker />
-        </mat-form-field>
+          <!-- Descrição -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Descrição</mat-label>
+            <textarea
+              matInput
+              formControlName="description"
+              rows="3"
+              placeholder="Descreva a tarefa (opcional)"
+            ></textarea>
+          </mat-form-field>
 
-        <div class="form-actions">
-          <button mat-stroked-button type="button" routerLink="/tasks">Cancelar</button>
-          <button mat-flat-button class="btn-save" type="submit">Salvar</button>
-        </div>
-      </form>
-    </mat-card-content>
-  </mat-card>
+          <!-- Row: Responsável + Prioridade -->
+          <div class="form-row">
+
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Responsável *</mat-label>
+              <mat-select formControlName="assigneeId">
+                @for (user of users(); track user.id) {
+                  <mat-option [value]="user.id">{{ user.name }}</mat-option>
+                }
+              </mat-select>
+              @if (assigneeCtrl.hasError('required') && assigneeCtrl.touched) {
+                <mat-error>Responsável é obrigatório</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Prioridade *</mat-label>
+              <mat-select formControlName="priority">
+                @for (opt of priorityOptions; track opt.value) {
+                  <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+          </div>
+
+          <!-- Row: Status + Prazo -->
+          <div class="form-row">
+
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Status *</mat-label>
+              <mat-select formControlName="status">
+                @for (opt of statusOptions; track opt.value) {
+                  <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Prazo *</mat-label>
+              <input
+                matInput
+                [matDatepicker]="picker"
+                formControlName="dueDate"
+                placeholder="dd/mm/aaaa"
+              />
+              <mat-datepicker-toggle matIconSuffix [for]="picker" />
+              <mat-datepicker #picker />
+              @if (dueDateCtrl.hasError('required') && dueDateCtrl.touched) {
+                <mat-error>Prazo é obrigatório</mat-error>
+              }
+            </mat-form-field>
+
+          </div>
+
+          <!-- Form actions -->
+          <div class="form-actions">
+            <button mat-stroked-button type="button" routerLink="/tasks" class="btn-cancel">
+              Cancelar
+            </button>
+            <button mat-flat-button class="btn-save" type="submit" [disabled]="submitting()">
+              @if (submitting()) {
+                <mat-spinner diameter="18" />
+              } @else {
+                <ng-container>
+                  <mat-icon>save</mat-icon>
+                  {{ isEditMode ? 'Salvar alterações' : 'Criar tarefa' }}
+                </ng-container>
+              }
+            </button>
+          </div>
+
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+  }
+
 </div>
+
 

@@ -1,18 +1,31 @@
 @use '../../../../styles' as t;
 
 .page-wrapper {
-  padding: t.$space-8;
-  max-width: 640px;
+  padding: t.$space-6 t.$space-8;
+  max-width: 720px;
   margin: 0 auto;
 }
 
+/* ── Loading ──────────────────────────────────────────────────────── */
+.loading-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 40vh;
+}
+
+/* ── Header ───────────────────────────────────────────────────────── */
 .page-header {
   display: flex;
   align-items: center;
   gap: t.$space-3;
   margin-bottom: t.$space-6;
+}
 
-  button { color: t.$text-secondary; }
+.back-btn {
+  color: t.$text-secondary;
+
+  &:hover { color: t.$text-primary; }
 }
 
 .page-title {
@@ -21,28 +34,50 @@
   color: t.$text-primary;
 }
 
+/* ── Card ─────────────────────────────────────────────────────────── */
 .form-card {
   background-color: t.$bg-surface;
   border: 1px solid t.$border-subtle;
   border-radius: t.$radius-md;
 }
 
+/* ── Fields ───────────────────────────────────────────────────────── */
 .full-width {
   width: 100%;
   margin-bottom: t.$space-2;
 }
 
+.form-row {
+  display: flex;
+  gap: t.$space-4;
+  margin-bottom: t.$space-2;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+  }
+}
+
+.half-width {
+  flex: 1;
+}
+
+/* ── Actions ──────────────────────────────────────────────────────── */
 .form-actions {
   display: flex;
   gap: t.$space-3;
   justify-content: flex-end;
-  margin-top: t.$space-4;
+  margin-top: t.$space-5;
 
-  button[mat-stroked-button] { color: t.$text-secondary; }
+  .btn-cancel {
+    color: t.$text-secondary;
+    border-color: t.$border-default;
+  }
+
+  .btn-save {
+    background-color: t.$primary;
+    color: t.$text-primary;
+    gap: t.$space-1;
+
+    mat-icon { font-size: 18px; }
+  }
 }
-
-.btn-save {
-  background-color: t.$primary;
-  color: t.$text-primary;
-}
-

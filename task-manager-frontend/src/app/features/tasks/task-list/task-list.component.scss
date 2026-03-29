@@ -1,16 +1,24 @@
 @use '../../../../styles' as t;
 
+/* ── Page layout ──────────────────────────────────────────────────── */
 .page-wrapper {
-  padding: t.$space-8;
-  max-width: 960px;
+  padding: t.$space-6 t.$space-8;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
+/* ── Header ───────────────────────────────────────────────────────── */
 .page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: t.$space-6;
+  margin-bottom: t.$space-5;
+}
+
+.header-left {
+  display: flex;
+  align-items: baseline;
+  gap: t.$space-3;
 }
 
 .page-title {
@@ -19,30 +27,155 @@
   color: t.$text-primary;
 }
 
+.task-count {
+  font-size: 13px;
+  color: t.$text-muted;
+}
+
 .btn-new {
   background-color: t.$primary;
   color: t.$text-primary;
   gap: t.$space-1;
 }
 
+/* ── Filter card ──────────────────────────────────────────────────── */
+.filter-card {
+  background-color: t.$bg-surface;
+  border: 1px solid t.$border-subtle;
+  border-radius: t.$radius-md;
+  margin-bottom: t.$space-5;
+}
+
+.filter-form {
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-4;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: t.$space-3;
+}
+
+.filter-field {
+  width: 100%;
+}
+
+.filter-actions {
+  display: flex;
+  gap: t.$space-3;
+  justify-content: flex-end;
+
+  .btn-clear {
+    color: t.$text-secondary;
+    border-color: t.$border-default;
+  }
+
+  .btn-filter {
+    background-color: t.$primary;
+    color: t.$text-primary;
+    gap: t.$space-1;
+  }
+}
+
+/* ── Loading ──────────────────────────────────────────────────────── */
+.loading-wrap {
+  display: flex;
+  justify-content: center;
+  padding: t.$space-8;
+}
+
+/* ── Table ────────────────────────────────────────────────────────── */
 .task-table {
   width: 100%;
   background-color: t.$bg-surface;
   border: 1px solid t.$border-subtle;
   border-radius: t.$radius-md;
+  overflow: hidden;
 
-  .mat-mdc-header-cell { color: t.$text-secondary; }
-  .mat-mdc-cell        { color: t.$text-primary; }
+  .mat-mdc-header-cell {
+    color: t.$text-secondary;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .mat-mdc-cell {
+    color: t.$text-primary;
+  }
 }
 
-.empty-row td {
-  padding: t.$space-8;
-  text-align: center;
+/* ── Cell: title with description sub-text ──────────────────────── */
+.cell-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: t.$space-2 0;
+}
+
+.title-text {
+  font-weight: 500;
+  color: t.$text-primary;
+}
+
+.desc-text {
+  font-size: 12px;
   color: t.$text-muted;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
 }
 
-// Status chip colours
-.chip-todo        { background: rgba(136, 136, 168, 0.15) !important; color: t.$text-secondary !important; }
-.chip-in_progress { background: t.$primary-glow !important;           color: t.$primary-light   !important; }
-.chip-done        { background: rgba(34, 197, 94, 0.15)  !important;  color: t.$color-success   !important; }
+/* ── Chips ────────────────────────────────────────────────────────── */
+.chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
 
+/* Priority */
+.priority-high   { background: rgba(239, 68, 68, 0.15);  color: t.$color-danger;  }
+.priority-medium { background: rgba(245, 158, 11, 0.15); color: t.$color-warning; }
+.priority-low    { background: rgba(136, 136, 168, 0.1); color: t.$text-secondary;}
+
+/* Status */
+.status-todo        { background: rgba(136, 136, 168, 0.12); color: t.$text-secondary; }
+.status-in_progress { background: t.$primary-glow;            color: t.$primary-light;  }
+.status-completed   { background: rgba(34, 197, 94, 0.15);   color: t.$color-success;  }
+.status-cancelled   { background: rgba(239, 68, 68, 0.12);   color: t.$color-danger;   }
+
+/* ── Menu icons ───────────────────────────────────────────────────── */
+.icon-success { color: t.$color-success !important; }
+.icon-warning { color: t.$color-warning !important; }
+.icon-danger  { color: t.$color-danger  !important; }
+
+/* ── Empty state ──────────────────────────────────────────────────── */
+.empty-row td {
+  padding: 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$space-3;
+  padding: t.$space-8;
+  color: t.$text-muted;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    opacity: 0.4;
+  }
+
+  span {
+    font-size: 14px;
+  }
+}
