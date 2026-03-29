@@ -1,6 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -15,8 +15,10 @@ import { finalize } from 'rxjs';
 
 import { TaskService } from '../../../core/services/task.service';
 import { UserService } from '../../../core/services/user.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { TaskPriority, TaskRequest, TaskStatus } from '../../../core/models/task.model';
 import { User } from '../../../core/models/user.model';
+import { DateMaskDirective } from '../../../shared/directives/date-mask.directive';
 
 @Component({
   selector: 'app-task-form',
@@ -34,6 +36,7 @@ import { User } from '../../../core/models/user.model';
     MatNativeDateModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    DateMaskDirective,
   ],
   templateUrl: './task-form.component.html',
   styleUrl: './task-form.component.scss',
@@ -43,9 +46,13 @@ export class TaskFormComponent implements OnInit {
   isEditMode = false;
   taskId: number | null = null;
 
-  readonly loading    = signal(false);
-  readonly submitting = signal(false);
-  readonly users      = signal<User[]>([]);
+  readonly loading      = signal(false);
+  readonly submitting   = signal(false);
+  readonly users        = signal<User[]>([]);
+  readonly currentUser  = this.authService.currentUser;
+
+  /** Used as [min] on the datepicker — no past dates allowed on creation */
+  readonly today = new Date();
 
   readonly priorityOptions: Array<{ value: TaskPriority; label: string }> = [
     { value: 'HIGH',   label: 'Alta'  },
@@ -66,13 +73,14 @@ export class TaskFormComponent implements OnInit {
     assigneeId:  [null as number | null, Validators.required],
     priority:    ['MEDIUM' as TaskPriority, Validators.required],
     status:      ['TODO' as TaskStatus, Validators.required],
-    dueDate:     [null as Date | null, Validators.required],
+    dueDate:     [null as Date | null, [Validators.required, this._futureDateValidator()]],
   });
 
   constructor(
     private readonly fb: FormBuilder,
     private readonly taskService: TaskService,
     private readonly userService: UserService,
+    private readonly authService: AuthService,
     private readonly snackBar: MatSnackBar,
     private readonly router: Router,
     private readonly route: ActivatedRoute,
@@ -150,6 +158,18 @@ export class TaskFormComponent implements OnInit {
           this.snackBar.open(msg, 'OK', { duration: 4000 });
         },
       });
+  }
+
+  /** Rejects dates strictly before today (only for new tasks) */
+  private _futureDateValidator() {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (this.isEditMode || !control.value) return null;
+      const selected = new Date(control.value);
+      selected.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return selected < today ? { pastDate: true } : null;
+    };
   }
 
   private formatDate(date: Date): string {

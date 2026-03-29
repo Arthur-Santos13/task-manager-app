@@ -41,5 +41,12 @@ public interface TaskService {
      * A task that is already COMPLETED or CANCELLED cannot be cancelled.
      */
     TaskResponse cancelTask(Long id, User currentUser);
+
+    /**
+     * Moves the task from TODO → IN_PROGRESS.
+     * Only the assigned user or an ADMIN may start a task.
+     * The task must be in TODO status.
+     */
+    TaskResponse startTask(Long id, User currentUser);
 }
 

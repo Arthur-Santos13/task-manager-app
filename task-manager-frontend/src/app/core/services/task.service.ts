@@ -46,6 +46,10 @@ export class TaskService {
     return this.http.patch<Task>(`${this.API}/${id}/complete`, {});
   }
 
+  start(id: number): Observable<Task> {
+    return this.http.patch<Task>(`${this.API}/${id}/start`, {});
+  }
+
   cancel(id: number): Observable<Task> {
     return this.http.patch<Task>(`${this.API}/${id}/cancel`, {});
   }

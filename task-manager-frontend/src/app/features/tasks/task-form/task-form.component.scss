@@ -61,6 +61,19 @@
   flex: 1;
 }
 
+/* ── Criado por (read-only) ───────────────────────────────────────── */
+.readonly-input {
+  cursor: default;
+  color: t.$text-secondary !important;
+}
+
+.readonly-icon {
+  color: t.$text-muted;
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
 /* ── Actions ──────────────────────────────────────────────────────── */
 .form-actions {
   display: flex;
@@ -76,8 +89,15 @@
   .btn-save {
     background-color: t.$primary;
     color: t.$text-primary;
+    display: inline-flex;
+    align-items: center;
     gap: t.$space-1;
 
-    mat-icon { font-size: 18px; }
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      line-height: 18px;
+    }
   }
 }
