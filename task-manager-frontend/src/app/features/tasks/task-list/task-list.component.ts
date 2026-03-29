@@ -22,9 +22,11 @@ import { finalize } from 'rxjs';
 
 import { TaskService } from '../../../core/services/task.service';
 import { UserService } from '../../../core/services/user.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { Task, TaskFilter, TaskPriority, TaskStatus } from '../../../core/models/task.model';
 import { User } from '../../../core/models/user.model';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog.component';
+import { DateMaskDirective } from '../../../shared/directives/date-mask.directive';
 
 @Component({
   selector: 'app-task-list',
@@ -49,17 +51,19 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
     MatProgressSpinnerModule,
     MatTooltipModule,
     MatCardModule,
+    DateMaskDirective,
   ],
   templateUrl: './task-list.component.html',
   styleUrl: './task-list.component.scss',
 })
 export class TaskListComponent implements OnInit {
 
-  readonly loading    = signal(false);
-  readonly users      = signal<User[]>([]);
-  readonly dataSource = new MatTableDataSource<Task>([]);
+  readonly loading     = signal(false);
+  readonly users       = signal<User[]>([]);
+  readonly dataSource  = new MatTableDataSource<Task>([]);
+  readonly currentUser = this.authService.currentUser;
 
-  readonly displayedColumns = ['title', 'priority', 'status', 'assignee', 'dueDate', 'actions'];
+  readonly displayedColumns = ['title', 'priority', 'status', 'assignee', 'createdBy', 'dueDate', 'actions'];
 
   readonly priorityOptions: Array<{ value: TaskPriority; label: string }> = [
     { value: 'HIGH',   label: 'Alta'  },
@@ -88,12 +92,18 @@ export class TaskListComponent implements OnInit {
     private readonly fb: FormBuilder,
     private readonly taskService: TaskService,
     private readonly userService: UserService,
+    private readonly authService: AuthService,
     private readonly snackBar: MatSnackBar,
     private readonly dialog: MatDialog,
   ) {}
 
   ngOnInit(): void {
     this.userService.getAll().subscribe(users => this.users.set(users));
+
+    // Pre-fill createdById with the logged-in user — immutable in the filter
+    const uid = this.currentUser()?.userId ?? null;
+    this.filterForm.patchValue({ createdById: uid });
+
     this.loadTasks();
   }
 
@@ -128,10 +138,19 @@ export class TaskListComponent implements OnInit {
 
   clearFilter(): void {
     this.filterForm.reset();
+    // Always keep createdById as the logged-in user
+    this.filterForm.patchValue({ createdById: this.currentUser()?.userId ?? null });
     this.loadTasks();
   }
 
   // ── Actions ─────────────────────────────────────────────────────────
+
+  onStartTask(task: Task): void {
+    this.taskService.start(task.id).subscribe({
+      next: () => { this.snackBar.open('Tarefa iniciada!', 'OK', { duration: 3000 }); this.loadTasks(); },
+      error: () => this.snackBar.open('Erro ao iniciar tarefa.', 'OK', { duration: 3000 }),
+    });
+  }
 
   onComplete(task: Task): void {
     const ref = this.dialog.open(ConfirmDialogComponent, {
@@ -217,6 +236,12 @@ export class TaskListComponent implements OnInit {
 
   canCancelTask(task: Task): boolean {
     return task.status === 'TODO' || task.status === 'IN_PROGRESS';
+  }
+
+  /** Visible only when status = TODO and the logged-in user is the assignee */
+  canStart(task: Task): boolean {
+    return task.status === 'TODO'
+      && task.assignee?.id === this.currentUser()?.userId;
   }
 
   // ── Utilities ────────────────────────────────────────────────────────

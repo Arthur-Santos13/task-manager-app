@@ -135,5 +135,17 @@ public class TaskController {
 
         return ResponseEntity.ok(taskService.cancelTask(id, currentUser));
     }
+
+    // -------------------------------------------------------------------------
+    // PATCH /api/tasks/{id}/start
+    // -------------------------------------------------------------------------
+
+    @PatchMapping("/{id}/start")
+    public ResponseEntity<TaskResponse> startTask(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User currentUser) {
+
+        return ResponseEntity.ok(taskService.startTask(id, currentUser));
+    }
 }
 

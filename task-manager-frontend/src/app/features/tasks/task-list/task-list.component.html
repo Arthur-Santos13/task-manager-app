@@ -35,7 +35,6 @@
           <mat-form-field appearance="outline" class="filter-field">
             <mat-label>Prioridade</mat-label>
             <mat-select formControlName="priority">
-              <mat-option [value]="null">Todas</mat-option>
               @for (opt of priorityOptions; track opt.value) {
                 <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
               }
@@ -46,7 +45,6 @@
           <mat-form-field appearance="outline" class="filter-field">
             <mat-label>Status</mat-label>
             <mat-select formControlName="status">
-              <mat-option [value]="null">Ativos (padrão)</mat-option>
               @for (opt of statusOptions; track opt.value) {
                 <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
               }
@@ -57,22 +55,17 @@
           <mat-form-field appearance="outline" class="filter-field">
             <mat-label>Responsável</mat-label>
             <mat-select formControlName="assigneeId">
-              <mat-option [value]="null">Todos</mat-option>
               @for (user of users(); track user.id) {
                 <mat-option [value]="user.id">{{ user.name }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
 
-          <!-- Criado por -->
+          <!-- Criado por (somente leitura — sempre o usuário logado) -->
           <mat-form-field appearance="outline" class="filter-field">
             <mat-label>Criado por</mat-label>
-            <mat-select formControlName="createdById">
-              <mat-option [value]="null">Todos</mat-option>
-              @for (user of users(); track user.id) {
-                <mat-option [value]="user.id">{{ user.name }}</mat-option>
-              }
-            </mat-select>
+            <input matInput [value]="currentUser()?.name ?? ''" readonly class="readonly-input" />
+            <mat-icon matSuffix class="readonly-icon">lock</mat-icon>
           </mat-form-field>
 
           <!-- Prazo até -->
@@ -80,6 +73,7 @@
             <mat-label>Prazo até</mat-label>
             <input
               matInput
+              dateMask
               [matDatepicker]="duePicker"
               formControlName="dueDateUntil"
               placeholder="dd/mm/aaaa"
@@ -156,6 +150,12 @@
         <mat-cell *matCellDef="let task">{{ task.assignee?.name ?? '—' }}</mat-cell>
       </ng-container>
 
+      <!-- Criado por -->
+      <ng-container matColumnDef="createdBy">
+        <mat-header-cell *matHeaderCellDef>Criado por</mat-header-cell>
+        <mat-cell *matCellDef="let task">{{ task.createdBy?.name ?? '—' }}</mat-cell>
+      </ng-container>
+
       <!-- Prazo -->
       <ng-container matColumnDef="dueDate">
         <mat-header-cell *matHeaderCellDef>Prazo</mat-header-cell>
@@ -170,6 +170,12 @@
             <mat-icon>more_vert</mat-icon>
           </button>
           <mat-menu #menu>
+            @if (canStart(task)) {
+              <button mat-menu-item (click)="onStartTask(task)">
+                <mat-icon class="icon-info">play_circle</mat-icon>
+                Iniciar tarefa
+              </button>
+            }
             @if (canComplete(task)) {
               <button mat-menu-item (click)="onComplete(task)">
                 <mat-icon class="icon-success">check_circle</mat-icon>

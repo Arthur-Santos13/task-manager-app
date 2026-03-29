@@ -155,6 +155,29 @@ public class TaskServiceImpl implements TaskService {
     }
 
     // -------------------------------------------------------------------------
+    // startTask
+    // -------------------------------------------------------------------------
+
+    @Override
+    public TaskResponse startTask(Long id, User currentUser) {
+        Task task = findTaskOrThrow(id);
+
+        boolean isAdmin    = currentUser.getRole() == Role.ADMIN;
+        boolean isAssignee = task.getAssignee().getId().equals(currentUser.getId());
+
+        if (!isAdmin && !isAssignee) {
+            throw new AccessDeniedException("Only the assigned user or an admin can start this task.");
+        }
+
+        if (task.getStatus() != TaskStatus.TODO) {
+            throw new BusinessException("Only tasks with status TODO can be started.");
+        }
+
+        task.setStatus(TaskStatus.IN_PROGRESS);
+        return toResponse(taskRepository.save(task));
+    }
+
+    // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
 

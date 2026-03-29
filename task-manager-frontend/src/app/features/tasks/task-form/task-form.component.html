@@ -42,7 +42,7 @@
             ></textarea>
           </mat-form-field>
 
-          <!-- Row: Responsável + Prioridade -->
+          <!-- Row: Responsável + Criado por -->
           <div class="form-row">
 
             <mat-form-field appearance="outline" class="half-width">
@@ -57,6 +57,18 @@
               }
             </mat-form-field>
 
+            <!-- Criado por: preenchido automaticamente, apenas exibição -->
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Criado por</mat-label>
+              <input matInput [value]="currentUser()?.name ?? ''" readonly class="readonly-input" />
+              <mat-icon matSuffix class="readonly-icon">lock</mat-icon>
+            </mat-form-field>
+
+          </div>
+
+          <!-- Row: Prioridade + Status -->
+          <div class="form-row">
+
             <mat-form-field appearance="outline" class="half-width">
               <mat-label>Prioridade *</mat-label>
               <mat-select formControlName="priority">
@@ -65,11 +77,6 @@
                 }
               </mat-select>
             </mat-form-field>
-
-          </div>
-
-          <!-- Row: Status + Prazo -->
-          <div class="form-row">
 
             <mat-form-field appearance="outline" class="half-width">
               <mat-label>Status *</mat-label>
@@ -80,11 +87,18 @@
               </mat-select>
             </mat-form-field>
 
+          </div>
+
+          <!-- Row: Prazo -->
+          <div class="form-row">
+
             <mat-form-field appearance="outline" class="half-width">
               <mat-label>Prazo *</mat-label>
               <input
                 matInput
+                dateMask
                 [matDatepicker]="picker"
+                [min]="isEditMode ? null : today"
                 formControlName="dueDate"
                 placeholder="dd/mm/aaaa"
               />
@@ -92,6 +106,10 @@
               <mat-datepicker #picker />
               @if (dueDateCtrl.hasError('required') && dueDateCtrl.touched) {
                 <mat-error>Prazo é obrigatório</mat-error>
+              } @else if (dueDateCtrl.hasError('pastDate') && dueDateCtrl.touched) {
+                <mat-error>O prazo não pode ser uma data passada</mat-error>
+              } @else if (dueDateCtrl.hasError('matDatepickerMin') && dueDateCtrl.touched) {
+                <mat-error>O prazo não pode ser uma data passada</mat-error>
               }
             </mat-form-field>
 
@@ -106,11 +124,9 @@
               @if (submitting()) {
                 <mat-spinner diameter="18" />
               } @else {
-                <ng-container>
-                  <mat-icon>save</mat-icon>
-                  {{ isEditMode ? 'Salvar alterações' : 'Criar tarefa' }}
-                </ng-container>
+                <mat-icon>save</mat-icon>
               }
+              {{ submitting() ? '' : (isEditMode ? 'Salvar alterações' : 'Criar tarefa') }}
             </button>
           </div>
 
