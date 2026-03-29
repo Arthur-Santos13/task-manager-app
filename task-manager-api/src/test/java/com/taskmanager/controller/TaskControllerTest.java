@@ -7,6 +7,7 @@ import com.taskmanager.entity.Role;
 import com.taskmanager.entity.TaskPriority;
 import com.taskmanager.entity.TaskStatus;
 import com.taskmanager.entity.User;
+import com.taskmanager.exception.AccessDeniedException;
 import com.taskmanager.exception.BusinessException;
 import com.taskmanager.exception.ResourceNotFoundException;
 import com.taskmanager.security.JwtService;
@@ -242,6 +243,34 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.id").value(1));
     }
 
+    @Test
+    @DisplayName("PUT /api/tasks/{id} — not found returns 404")
+    void updateTask_notFound_returns404() throws Exception {
+        when(taskService.updateTask(eq(99L), any(), any()))
+                .thenThrow(new ResourceNotFoundException("Task", 99L));
+
+        mockMvc.perform(put(TASKS_URL + "/99")
+                        .header("Authorization", AUTH_HEADER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validTaskJson()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    @DisplayName("PUT /api/tasks/{id} — access denied returns 403")
+    void updateTask_accessDenied_returns403() throws Exception {
+        when(taskService.updateTask(eq(1L), any(), any()))
+                .thenThrow(new AccessDeniedException("You do not have permission to update this task."));
+
+        mockMvc.perform(put(TASKS_URL + "/1")
+                        .header("Authorization", AUTH_HEADER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validTaskJson()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+    }
+
     // -------------------------------------------------------------------------
     // DELETE /api/tasks/{id}
     // -------------------------------------------------------------------------
@@ -253,6 +282,27 @@ class TaskControllerTest {
 
         mockMvc.perform(delete(TASKS_URL + "/1").header("Authorization", AUTH_HEADER))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("DELETE /api/tasks/{id} — not found returns 404")
+    void deleteTask_notFound_returns404() throws Exception {
+        doThrow(new ResourceNotFoundException("Task", 99L)).when(taskService).deleteTask(eq(99L), any());
+
+        mockMvc.perform(delete(TASKS_URL + "/99").header("Authorization", AUTH_HEADER))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    @DisplayName("DELETE /api/tasks/{id} — access denied returns 403")
+    void deleteTask_accessDenied_returns403() throws Exception {
+        doThrow(new AccessDeniedException("You do not have permission to delete this task."))
+                .when(taskService).deleteTask(eq(1L), any());
+
+        mockMvc.perform(delete(TASKS_URL + "/1").header("Authorization", AUTH_HEADER))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
     }
 
     // -------------------------------------------------------------------------
@@ -280,6 +330,17 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.message").value("Task is already completed."));
     }
 
+    @Test
+    @DisplayName("PATCH /api/tasks/{id}/complete — not found returns 404")
+    void completeTask_notFound_returns404() throws Exception {
+        when(taskService.completeTask(eq(99L), any()))
+                .thenThrow(new ResourceNotFoundException("Task", 99L));
+
+        mockMvc.perform(patch(TASKS_URL + "/99/complete").header("Authorization", AUTH_HEADER))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
     // -------------------------------------------------------------------------
     // PATCH /api/tasks/{id}/cancel
     // -------------------------------------------------------------------------
@@ -292,6 +353,64 @@ class TaskControllerTest {
         mockMvc.perform(patch(TASKS_URL + "/1/cancel").header("Authorization", AUTH_HEADER))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CANCELLED"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/tasks/{id}/cancel — already cancelled returns 409")
+    void cancelTask_alreadyCancelled_returns409() throws Exception {
+        when(taskService.cancelTask(eq(1L), any()))
+                .thenThrow(new BusinessException("Task is already cancelled."));
+
+        mockMvc.perform(patch(TASKS_URL + "/1/cancel").header("Authorization", AUTH_HEADER))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Task is already cancelled."));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/tasks/{id}/cancel — not found returns 404")
+    void cancelTask_notFound_returns404() throws Exception {
+        when(taskService.cancelTask(eq(99L), any()))
+                .thenThrow(new ResourceNotFoundException("Task", 99L));
+
+        mockMvc.perform(patch(TASKS_URL + "/99/cancel").header("Authorization", AUTH_HEADER))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    // -------------------------------------------------------------------------
+    // PATCH /api/tasks/{id}/start
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("PATCH /api/tasks/{id}/start — returns 200 with IN_PROGRESS status")
+    void startTask_returns200() throws Exception {
+        when(taskService.startTask(eq(1L), any())).thenReturn(buildWithStatus(TaskStatus.IN_PROGRESS));
+
+        mockMvc.perform(patch(TASKS_URL + "/1/start").header("Authorization", AUTH_HEADER))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/tasks/{id}/start — non-TODO task returns 409")
+    void startTask_notTodo_returns409() throws Exception {
+        when(taskService.startTask(eq(1L), any()))
+                .thenThrow(new BusinessException("Only tasks with status TODO can be started."));
+
+        mockMvc.perform(patch(TASKS_URL + "/1/start").header("Authorization", AUTH_HEADER))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Only tasks with status TODO can be started."));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/tasks/{id}/start — access denied returns 403")
+    void startTask_accessDenied_returns403() throws Exception {
+        when(taskService.startTask(eq(1L), any()))
+                .thenThrow(new AccessDeniedException("Only the assigned user or an admin can start this task."));
+
+        mockMvc.perform(patch(TASKS_URL + "/1/start").header("Authorization", AUTH_HEADER))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
     }
 
     // -------------------------------------------------------------------------

@@ -185,6 +185,15 @@ class TaskServiceImplTest {
         verify(taskRepository, never()).save(any(Task.class));
     }
 
+    @Test
+    @DisplayName("updateTask — not found throws ResourceNotFoundException")
+    void updateTask_notFound_throwsResourceNotFoundException() {
+        when(taskRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> taskService.updateTask(99L, taskRequest, creator))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
     // -------------------------------------------------------------------------
     // deleteTask
     // -------------------------------------------------------------------------
@@ -200,6 +209,17 @@ class TaskServiceImplTest {
     }
 
     @Test
+    @DisplayName("deleteTask — ADMIN may delete any task")
+    void deleteTask_asAdmin_success() {
+        User admin = User.builder().id(99L).role(Role.ADMIN).build();
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
+
+        assertThatNoException()
+                .isThrownBy(() -> taskService.deleteTask(1L, admin));
+        verify(taskRepository).delete(task);
+    }
+
+    @Test
     @DisplayName("deleteTask — third-party USER throws AccessDeniedException and does not delete")
     void deleteTask_notCreator_throwsAccessDeniedException() {
         User stranger = User.builder().id(3L).role(Role.USER).build();
@@ -208,6 +228,15 @@ class TaskServiceImplTest {
         assertThatThrownBy(() -> taskService.deleteTask(1L, stranger))
                 .isInstanceOf(AccessDeniedException.class);
         verify(taskRepository, never()).delete(any(Task.class));
+    }
+
+    @Test
+    @DisplayName("deleteTask — not found throws ResourceNotFoundException")
+    void deleteTask_notFound_throwsResourceNotFoundException() {
+        when(taskRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> taskService.deleteTask(99L, creator))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     // -------------------------------------------------------------------------
@@ -224,6 +253,18 @@ class TaskServiceImplTest {
 
         assertThat(response.status()).isEqualTo(TaskStatus.COMPLETED);
         verify(taskRepository).save(task);
+    }
+
+    @Test
+    @DisplayName("completeTask — TODO task becomes COMPLETED")
+    void completeTask_todoTask_changesStatusToCompleted() {
+        task.setStatus(TaskStatus.TODO);
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
+        when(taskRepository.save(task)).thenReturn(task);
+
+        TaskResponse response = taskService.completeTask(1L, creator);
+
+        assertThat(response.status()).isEqualTo(TaskStatus.COMPLETED);
     }
 
     @Test
@@ -246,6 +287,15 @@ class TaskServiceImplTest {
         assertThatThrownBy(() -> taskService.completeTask(1L, creator))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("cancelled");
+    }
+
+    @Test
+    @DisplayName("completeTask — not found throws ResourceNotFoundException")
+    void completeTask_notFound_throwsResourceNotFoundException() {
+        when(taskRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> taskService.completeTask(99L, creator))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     // -------------------------------------------------------------------------
@@ -284,6 +334,74 @@ class TaskServiceImplTest {
         assertThatThrownBy(() -> taskService.cancelTask(1L, creator))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("completed");
+    }
+
+    @Test
+    @DisplayName("cancelTask — not found throws ResourceNotFoundException")
+    void cancelTask_notFound_throwsResourceNotFoundException() {
+        when(taskRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> taskService.cancelTask(99L, creator))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // -------------------------------------------------------------------------
+    // startTask
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("startTask — assignee starts TODO task successfully")
+    void startTask_asAssignee_success() {
+        task.setStatus(TaskStatus.TODO);
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
+        when(taskRepository.save(task)).thenReturn(task);
+
+        TaskResponse response = taskService.startTask(1L, assignee);
+
+        assertThat(response.status()).isEqualTo(TaskStatus.IN_PROGRESS);
+        verify(taskRepository).save(task);
+    }
+
+    @Test
+    @DisplayName("startTask — ADMIN can start any TODO task")
+    void startTask_asAdmin_success() {
+        task.setStatus(TaskStatus.TODO);
+        User admin = User.builder().id(99L).role(Role.ADMIN).build();
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
+        when(taskRepository.save(task)).thenReturn(task);
+
+        assertThatNoException()
+                .isThrownBy(() -> taskService.startTask(1L, admin));
+    }
+
+    @Test
+    @DisplayName("startTask — non-assignee non-admin throws AccessDeniedException")
+    void startTask_notAssignee_throwsAccessDeniedException() {
+        task.setStatus(TaskStatus.TODO);
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> taskService.startTask(1L, creator))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    @DisplayName("startTask — non-TODO task throws BusinessException")
+    void startTask_notTodo_throwsBusinessException() {
+        task.setStatus(TaskStatus.IN_PROGRESS);
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> taskService.startTask(1L, assignee))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("TODO");
+    }
+
+    @Test
+    @DisplayName("startTask — not found throws ResourceNotFoundException")
+    void startTask_notFound_throwsResourceNotFoundException() {
+        when(taskRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> taskService.startTask(99L, assignee))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 }
 
