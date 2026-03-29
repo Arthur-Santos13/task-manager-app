@@ -32,6 +32,8 @@ export const routes: Routes = [
   {
     path: 'tasks',
     canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/tasks/task-shell/task-shell.component').then(m => m.TaskShellComponent),
     children: [
       {
         path: '',

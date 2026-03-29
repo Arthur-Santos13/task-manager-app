@@ -1,0 +1,56 @@
+@use '../../../../styles' as t;
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: t.$bg-darkest;
+}
+
+/* ── Top bar ──────────────────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 t.$space-6;
+  height: 60px;
+  background-color: t.$bg-surface;
+  border-bottom: 1px solid t.$border-subtle;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+.topbar-end {
+  display: flex;
+  align-items: center;
+  gap: t.$space-2;
+}
+
+.user-greeting {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: t.$text-primary;
+}
+
+.logout-btn {
+  color: t.$text-secondary;
+
+  &:hover {
+    color: t.$color-danger;
+  }
+}
+
+/* ── Main content ─────────────────────────────────────────────────── */
+.main-content {
+  flex: 1;
+  overflow: auto;
+}
+

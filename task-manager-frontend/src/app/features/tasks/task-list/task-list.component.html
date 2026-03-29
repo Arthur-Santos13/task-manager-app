@@ -1,55 +1,214 @@
 <div class="page-wrapper">
   <header class="page-header">
-    <h1 class="page-title">Minhas Tarefas</h1>
+    <div class="header-left">
+      <h1 class="page-title">Tarefas</h1>
+      <span class="task-count">{{ dataSource.data.length }} tarefa(s)</span>
+    </div>
     <button mat-flat-button class="btn-new" routerLink="/tasks/new">
       <mat-icon>add</mat-icon>
       Nova tarefa
     </button>
   </header>
 
-  <mat-table [dataSource]="tasks" class="task-table">
-    <ng-container matColumnDef="title">
-      <mat-header-cell *matHeaderCellDef>Título</mat-header-cell>
-      <mat-cell *matCellDef="let task">{{ task.title }}</mat-cell>
-    </ng-container>
+  <!-- ── Filter panel ──────────────────────────────────────────────── -->
+  <mat-card class="filter-card">
+    <mat-card-content>
+      <form [formGroup]="filterForm" (ngSubmit)="applyFilter()" class="filter-form">
 
-    <ng-container matColumnDef="status">
-      <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
-      <mat-cell *matCellDef="let task">
-        <mat-chip [class]="'chip-' + task.status.toLowerCase()">
-          {{ task.status }}
-        </mat-chip>
-      </mat-cell>
-    </ng-container>
+        <div class="filter-grid">
 
-    <ng-container matColumnDef="dueDate">
-      <mat-header-cell *matHeaderCellDef>Vencimento</mat-header-cell>
-      <mat-cell *matCellDef="let task">{{ task.dueDate ?? '—' }}</mat-cell>
-    </ng-container>
+          <!-- Título -->
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Título</mat-label>
+            <input matInput formControlName="title" placeholder="Buscar por título" />
+            <mat-icon matSuffix>title</mat-icon>
+          </mat-form-field>
 
-    <ng-container matColumnDef="actions">
-      <mat-header-cell *matHeaderCellDef></mat-header-cell>
-      <mat-cell *matCellDef="let task">
-        <button mat-icon-button [matMenuTriggerFor]="menu">
-          <mat-icon>more_vert</mat-icon>
-        </button>
-        <mat-menu #menu>
-          <button mat-menu-item [routerLink]="['/tasks', task.id, 'edit']">
-            <mat-icon>edit</mat-icon> Editar
+          <!-- Descrição -->
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Descrição</mat-label>
+            <input matInput formControlName="description" placeholder="Buscar na descrição" />
+            <mat-icon matSuffix>notes</mat-icon>
+          </mat-form-field>
+
+          <!-- Prioridade -->
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Prioridade</mat-label>
+            <mat-select formControlName="priority">
+              <mat-option [value]="null">Todas</mat-option>
+              @for (opt of priorityOptions; track opt.value) {
+                <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Status -->
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Status</mat-label>
+            <mat-select formControlName="status">
+              <mat-option [value]="null">Ativos (padrão)</mat-option>
+              @for (opt of statusOptions; track opt.value) {
+                <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Responsável -->
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Responsável</mat-label>
+            <mat-select formControlName="assigneeId">
+              <mat-option [value]="null">Todos</mat-option>
+              @for (user of users(); track user.id) {
+                <mat-option [value]="user.id">{{ user.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Criado por -->
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Criado por</mat-label>
+            <mat-select formControlName="createdById">
+              <mat-option [value]="null">Todos</mat-option>
+              @for (user of users(); track user.id) {
+                <mat-option [value]="user.id">{{ user.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Prazo até -->
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Prazo até</mat-label>
+            <input
+              matInput
+              [matDatepicker]="duePicker"
+              formControlName="dueDateUntil"
+              placeholder="dd/mm/aaaa"
+            />
+            <mat-datepicker-toggle matIconSuffix [for]="duePicker" />
+            <mat-datepicker #duePicker />
+          </mat-form-field>
+
+        </div>
+
+        <!-- Filter actions -->
+        <div class="filter-actions">
+          <button mat-stroked-button type="button" class="btn-clear" (click)="clearFilter()">
+            <mat-icon>clear</mat-icon>
+            Limpar
           </button>
-          <button mat-menu-item (click)="onDelete(task.id)">
-            <mat-icon>delete</mat-icon> Excluir
+          <button mat-flat-button class="btn-filter" type="submit">
+            <mat-icon>search</mat-icon>
+            Filtrar
           </button>
-        </mat-menu>
-      </mat-cell>
-    </ng-container>
+        </div>
 
-    <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
-    <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+      </form>
+    </mat-card-content>
+  </mat-card>
 
-    <tr class="mat-row empty-row" *matNoDataRow>
-      <td [colSpan]="displayedColumns.length">Nenhuma tarefa encontrada.</td>
-    </tr>
-  </mat-table>
+  <!-- ── Loading spinner ───────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="loading-wrap">
+      <mat-spinner diameter="40" />
+    </div>
+  }
+
+  <!-- ── Task table ────────────────────────────────────────────────── -->
+  @if (!loading()) {
+    <mat-table [dataSource]="dataSource" class="task-table">
+
+      <!-- Título -->
+      <ng-container matColumnDef="title">
+        <mat-header-cell *matHeaderCellDef>Título</mat-header-cell>
+        <mat-cell *matCellDef="let task">
+          <div class="cell-title">
+            <span class="title-text">{{ task.title }}</span>
+            @if (task.description) {
+              <span class="desc-text">{{ task.description }}</span>
+            }
+          </div>
+        </mat-cell>
+      </ng-container>
+
+      <!-- Prioridade -->
+      <ng-container matColumnDef="priority">
+        <mat-header-cell *matHeaderCellDef>Prioridade</mat-header-cell>
+        <mat-cell *matCellDef="let task">
+          <span class="chip chip-priority" [ngClass]="'priority-' + task.priority.toLowerCase()">
+            {{ priorityLabel(task.priority) }}
+          </span>
+        </mat-cell>
+      </ng-container>
+
+      <!-- Status -->
+      <ng-container matColumnDef="status">
+        <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
+        <mat-cell *matCellDef="let task">
+          <span class="chip chip-status" [ngClass]="'status-' + task.status.toLowerCase()">
+            {{ statusLabel(task.status) }}
+          </span>
+        </mat-cell>
+      </ng-container>
+
+      <!-- Responsável -->
+      <ng-container matColumnDef="assignee">
+        <mat-header-cell *matHeaderCellDef>Responsável</mat-header-cell>
+        <mat-cell *matCellDef="let task">{{ task.assignee?.name ?? '—' }}</mat-cell>
+      </ng-container>
+
+      <!-- Prazo -->
+      <ng-container matColumnDef="dueDate">
+        <mat-header-cell *matHeaderCellDef>Prazo</mat-header-cell>
+        <mat-cell *matCellDef="let task">{{ task.dueDate ?? '—' }}</mat-cell>
+      </ng-container>
+
+      <!-- Ações -->
+      <ng-container matColumnDef="actions">
+        <mat-header-cell *matHeaderCellDef></mat-header-cell>
+        <mat-cell *matCellDef="let task">
+          <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Ações">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu>
+            @if (canComplete(task)) {
+              <button mat-menu-item (click)="onComplete(task)">
+                <mat-icon class="icon-success">check_circle</mat-icon>
+                Concluir
+              </button>
+            }
+            @if (canCancelTask(task)) {
+              <button mat-menu-item (click)="onCancelTask(task)">
+                <mat-icon class="icon-warning">cancel</mat-icon>
+                Cancelar tarefa
+              </button>
+            }
+            <button mat-menu-item [routerLink]="['/tasks', task.id, 'edit']">
+              <mat-icon>edit</mat-icon>
+              Editar
+            </button>
+            <mat-divider />
+            <button mat-menu-item class="menu-delete" (click)="onDelete(task)">
+              <mat-icon class="icon-danger">delete</mat-icon>
+              Excluir
+            </button>
+          </mat-menu>
+        </mat-cell>
+      </ng-container>
+
+      <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+      <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+
+      <tr class="mat-row empty-row" *matNoDataRow>
+        <td [colSpan]="displayedColumns.length">
+          <div class="empty-state">
+            <mat-icon>assignment</mat-icon>
+            <span>Nenhuma tarefa encontrada.</span>
+          </div>
+        </td>
+      </tr>
+
+    </mat-table>
+  }
+
 </div>
 

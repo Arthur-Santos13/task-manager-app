@@ -1,0 +1,31 @@
+<div class="shell">
+
+  <!-- ── Top Bar ─────────────────────────────────────────────────── -->
+  <header class="topbar">
+    <app-logo [compact]="true" />
+
+    <div class="topbar-end">
+      @if (user(); as u) {
+        <span class="user-greeting">
+          <span class="user-name">{{ u.name }}</span>
+        </span>
+      }
+      <button
+        mat-icon-button
+        class="logout-btn"
+        (click)="logout()"
+        matTooltip="Sair"
+        aria-label="Sair"
+      >
+        <mat-icon>logout</mat-icon>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Main content ────────────────────────────────────────────── -->
+  <main class="main-content">
+    <router-outlet />
+  </main>
+
+</div>
+

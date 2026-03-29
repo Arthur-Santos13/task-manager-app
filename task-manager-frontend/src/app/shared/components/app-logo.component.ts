@@ -1,10 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 @Component({
   selector: 'app-logo',
   standalone: true,
   template: `
-    <div class="logo-wrap">
+    <div class="logo-wrap" [class.compact]="compact">
 
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 124 124"
            fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -94,7 +94,27 @@ import { Component } from '@angular/core';
       color: #ffffff;
       letter-spacing: 0.4px;
     }
+
+    /* ── Compact / topbar variant ─────────────────── */
+    .logo-wrap.compact {
+      flex-direction: row;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .logo-wrap.compact svg {
+      width: 30px;
+      height: 30px;
+      filter: none;
+    }
+
+    .logo-wrap.compact .app-name {
+      font-size: 15px;
+      letter-spacing: 0.2px;
+    }
   `],
 })
-export class AppLogoComponent {}
+export class AppLogoComponent {
+  @Input() compact = false;
+}
 
