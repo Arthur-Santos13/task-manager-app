@@ -17,7 +17,11 @@ export class PtBrDateAdapter extends NativeDateAdapter {
       if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
         const [d, m, y] = v.split('/').map(Number);
         const date = new Date(y, m - 1, d);
-        return isNaN(date.getTime()) ? null : date;
+        // Validate: Date constructor normalizes overflows, so verify the parts match
+        if (isNaN(date.getTime()) || date.getDate() !== d || date.getMonth() !== m - 1 || date.getFullYear() !== y) {
+          return null;
+        }
+        return date;
       }
 
       // Partial – let parent try
