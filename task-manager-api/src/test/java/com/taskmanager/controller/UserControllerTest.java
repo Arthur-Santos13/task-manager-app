@@ -1,7 +1,6 @@
 package com.taskmanager.controller;
 
 import com.taskmanager.config.SecurityConfig;
-import com.taskmanager.dto.UserResponse;
 import com.taskmanager.entity.Role;
 import com.taskmanager.entity.User;
 import com.taskmanager.repository.UserRepository;
@@ -18,7 +17,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -52,11 +50,11 @@ class UserControllerTest {
     private static final String AUTH_HEADER = "Bearer " + TOKEN;
     private static final String USERS_URL   = "/api/users";
 
-    private User testUser;
+    private User regularUser;
 
     @BeforeEach
     void setUp() {
-        testUser = User.builder()
+        regularUser = User.builder()
                 .id(1L)
                 .name("Test User")
                 .email("test@example.com")
@@ -65,41 +63,67 @@ class UserControllerTest {
                 .build();
 
         lenient().when(jwtService.extractUsername(TOKEN)).thenReturn("test@example.com");
-        lenient().when(userDetailsService.loadUserByUsername("test@example.com")).thenReturn(testUser);
+        lenient().when(userDetailsService.loadUserByUsername("test@example.com")).thenReturn(regularUser);
         lenient().when(jwtService.isTokenValid(eq(TOKEN), any(UserDetails.class))).thenReturn(true);
     }
 
     // -------------------------------------------------------------------------
-    // GET /api/users
+    // GET /api/users/picker
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("GET /api/users — returns 200 with list of users")
-    void listUsers_returns200() throws Exception {
-        User user1 = User.builder().id(1L).name("Alice").email("alice@test.com")
+    @DisplayName("GET /api/users/picker — returns id and name for each user")
+    void listPicker_returns200() throws Exception {
+        User user2 = User.builder().id(2L).name("Bob").email("bob@test.com")
                 .password("pass").role(Role.USER)
                 .build();
-        User user2 = User.builder().id(2L).name("Bob").email("bob@test.com")
-                .password("pass").role(Role.ADMIN)
-                .build();
+        when(userRepository.findAll()).thenReturn(List.of(regularUser, user2));
 
-        when(userRepository.findAll()).thenReturn(List.of(user1, user2));
-
-        mockMvc.perform(get(USERS_URL).header("Authorization", AUTH_HEADER))
+        mockMvc.perform(get(USERS_URL + "/picker").header("Authorization", AUTH_HEADER))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].name").value("Alice"))
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].name").value("Test User"))
                 .andExpect(jsonPath("$[1].name").value("Bob"));
     }
 
     @Test
-    @DisplayName("GET /api/users — empty list returns 200 with []")
-    void listUsers_empty_returns200() throws Exception {
-        when(userRepository.findAll()).thenReturn(List.of());
+    @DisplayName("GET /api/users/picker — no auth returns 403")
+    void listPicker_noAuth_returns403() throws Exception {
+        mockMvc.perform(get(USERS_URL + "/picker"))
+                .andExpect(status().isForbidden());
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/users (ADMIN)
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("GET /api/users — ADMIN returns 200 with list")
+    void listUsers_asAdmin_returns200() throws Exception {
+        User admin = User.builder()
+                .id(1L).name("Admin").email("test@example.com")
+                .password("encoded-pass").role(Role.ADMIN)
+                .build();
+        when(userDetailsService.loadUserByUsername("test@example.com")).thenReturn(admin);
+
+        User user2 = User.builder().id(2L).name("Bob").email("bob@test.com")
+                .password("pass").role(Role.USER)
+                .build();
+        when(userRepository.findAll()).thenReturn(List.of(admin, user2));
 
         mockMvc.perform(get(USERS_URL).header("Authorization", AUTH_HEADER))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].name").value("Admin"))
+                .andExpect(jsonPath("$[1].name").value("Bob"));
+    }
+
+    @Test
+    @DisplayName("GET /api/users — regular USER returns 403")
+    void listUsers_asRegularUser_returns403() throws Exception {
+        mockMvc.perform(get(USERS_URL).header("Authorization", AUTH_HEADER))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -114,22 +138,58 @@ class UserControllerTest {
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("GET /api/users/{id} — existing user returns 200")
-    void getUserById_found_returns200() throws Exception {
-        User user = User.builder().id(1L).name("Alice").email("alice@test.com")
-                .password("pass").role(Role.USER).build();
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+    @DisplayName("GET /api/users/{id} — self returns 200 with full profile")
+    void getUserById_self_returns200() throws Exception {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(regularUser));
 
         mockMvc.perform(get(USERS_URL + "/1").header("Authorization", AUTH_HEADER))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("Alice"))
-                .andExpect(jsonPath("$.email").value("alice@test.com"));
+                .andExpect(jsonPath("$.name").value("Test User"))
+                .andExpect(jsonPath("$.email").value("test@example.com"));
     }
 
     @Test
-    @DisplayName("GET /api/users/{id} — unknown id returns 404")
-    void getUserById_notFound_returns404() throws Exception {
+    @DisplayName("GET /api/users/{id} — viewing another user returns 403")
+    void getUserById_otherUser_returns403() throws Exception {
+        User other = User.builder().id(2L).name("Bob").email("bob@test.com")
+                .password("pass").role(Role.USER)
+                .build();
+        when(userRepository.findById(2L)).thenReturn(Optional.of(other));
+
+        mockMvc.perform(get(USERS_URL + "/2").header("Authorization", AUTH_HEADER))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+    }
+
+    @Test
+    @DisplayName("GET /api/users/{id} — ADMIN may view any user")
+    void getUserById_asAdmin_returns200() throws Exception {
+        User admin = User.builder()
+                .id(1L).name("Admin").email("test@example.com")
+                .password("p").role(Role.ADMIN)
+                .build();
+        when(userDetailsService.loadUserByUsername("test@example.com")).thenReturn(admin);
+
+        User other = User.builder().id(2L).name("Bob").email("bob@test.com")
+                .password("pass").role(Role.USER)
+                .build();
+        when(userRepository.findById(2L)).thenReturn(Optional.of(other));
+
+        mockMvc.perform(get(USERS_URL + "/2").header("Authorization", AUTH_HEADER))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(2))
+                .andExpect(jsonPath("$.email").value("bob@test.com"));
+    }
+
+    @Test
+    @DisplayName("GET /api/users/{id} — ADMIN and unknown id returns 404")
+    void getUserById_notFound_whenAdmin_returns404() throws Exception {
+        User admin = User.builder()
+                .id(1L).name("Admin").email("test@example.com")
+                .password("p").role(Role.ADMIN)
+                .build();
+        when(userDetailsService.loadUserByUsername("test@example.com")).thenReturn(admin);
         when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
         mockMvc.perform(get(USERS_URL + "/99").header("Authorization", AUTH_HEADER))
@@ -137,4 +197,3 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.status").value(404));
     }
 }
-
