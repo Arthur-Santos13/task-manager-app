@@ -27,6 +27,17 @@ describe('UserService', () => {
     expect(service).toBeTruthy();
   });
 
+  it('getPicker — should GET /api/users/picker', () => {
+    service.getPicker().subscribe(users => {
+      expect(users).toHaveLength(1);
+      expect(users[0].name).toBe('Alice');
+    });
+
+    const req = httpMock.expectOne('/api/users/picker');
+    expect(req.request.method).toBe('GET');
+    req.flush([{ id: 1, name: 'Alice' }]);
+  });
+
   it('getAll — should GET /api/users', () => {
     service.getAll().subscribe(users => {
       expect(users).toHaveLength(2);

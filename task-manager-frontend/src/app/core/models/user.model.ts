@@ -6,3 +6,9 @@ export interface User {
   /** Format: dd/MM/yyyy HH:mm:ss */
   createdAt: string;
 }
+
+/** Minimal user for assignee pickers (API: GET /api/users/picker). */
+export interface UserPicker {
+  id: number;
+  name: string;
+}

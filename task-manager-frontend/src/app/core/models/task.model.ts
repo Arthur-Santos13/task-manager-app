@@ -39,3 +39,12 @@ export interface TaskFilter {
   /** Format: dd/MM/yyyy */
   dueDateUntil?: string;
 }
+
+/** Paginated response from GET /api/tasks */
+export interface PagedTasks {
+  content: Task[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}

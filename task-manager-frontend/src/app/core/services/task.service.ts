@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Task, TaskFilter, TaskRequest } from '../models/task.model';
+import { PagedTasks, Task, TaskFilter, TaskRequest } from '../models/task.model';
 
 @Injectable({ providedIn: 'root' })
 export class TaskService {
@@ -10,8 +10,14 @@ export class TaskService {
 
   constructor(private readonly http: HttpClient) {}
 
-  getAll(filter?: TaskFilter): Observable<Task[]> {
-    let params = new HttpParams();
+  /**
+   * Paginated task list. When no status filter is set, the API omits finished tasks by default
+   * ({@code hideFinished=true}); pass an explicit status to include completed/cancelled in results.
+   */
+  getPage(filter: TaskFilter | undefined, page: number, size: number): Observable<PagedTasks> {
+    let params = new HttpParams()
+      .set('page', page)
+      .set('size', size);
 
     if (filter) {
       if (filter.title)                params = params.set('title',        filter.title);
@@ -19,11 +25,14 @@ export class TaskService {
       if (filter.assigneeId   != null) params = params.set('assigneeId',   filter.assigneeId);
       if (filter.createdById  != null) params = params.set('createdById',  filter.createdById);
       if (filter.priority)             params = params.set('priority',     filter.priority);
-      if (filter.status)               params = params.set('status',       filter.status);
+      if (filter.status) {
+        params = params.set('status', filter.status);
+        params = params.set('hideFinished', 'false');
+      }
       if (filter.dueDateUntil)         params = params.set('dueDateUntil', filter.dueDateUntil);
     }
 
-    return this.http.get<Task[]>(this.API, { params });
+    return this.http.get<PagedTasks>(this.API, { params });
   }
 
   getById(id: number): Observable<Task> {

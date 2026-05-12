@@ -17,7 +17,7 @@ describe('TaskListComponent', () => {
   let component: TaskListComponent;
   let fixture: ComponentFixture<TaskListComponent>;
   let taskServiceMock: Record<string, jest.Mock>;
-  let userServiceMock: { getAll: jest.Mock };
+  let userServiceMock: { getPicker: jest.Mock };
   let dialogMock: { open: jest.Mock };
   let snackBarMock: { open: jest.Mock };
 
@@ -28,15 +28,23 @@ describe('TaskListComponent', () => {
     createdBy: mockUser, createdAt: '', updatedAt: '',
   };
 
+  const mockPage = {
+    content: [mockTask],
+    totalElements: 1,
+    totalPages: 1,
+    number: 0,
+    size: 20,
+  };
+
   beforeEach(async () => {
     taskServiceMock = {
-      getAll: jest.fn().mockReturnValue(of([mockTask])),
+      getPage: jest.fn().mockReturnValue(of(mockPage)),
       start: jest.fn().mockReturnValue(of(mockTask)),
       complete: jest.fn().mockReturnValue(of(mockTask)),
       cancel: jest.fn().mockReturnValue(of(mockTask)),
       delete: jest.fn().mockReturnValue(of(undefined)),
     };
-    userServiceMock = { getAll: jest.fn().mockReturnValue(of([mockUser])) };
+    userServiceMock = { getPicker: jest.fn().mockReturnValue(of([{ id: 1, name: 'User' }])) };
     dialogMock = { open: jest.fn() };
     snackBarMock = { open: jest.fn() };
 
@@ -73,8 +81,8 @@ describe('TaskListComponent', () => {
   it('ngOnInit — should load users and tasks', fakeAsync(() => {
     fixture.detectChanges();
     tick();
-    expect(userServiceMock.getAll).toHaveBeenCalled();
-    expect(taskServiceMock.getAll).toHaveBeenCalled();
+    expect(userServiceMock.getPicker).toHaveBeenCalled();
+    expect(taskServiceMock.getPage).toHaveBeenCalled();
     expect(component.dataSource.data).toHaveLength(1);
   }));
 
@@ -87,7 +95,7 @@ describe('TaskListComponent', () => {
     tick();
 
     expect(component.filterForm.value.title).toBeFalsy();
-    expect(taskServiceMock.getAll).toHaveBeenCalledTimes(2); // init + clearFilter
+    expect(taskServiceMock.getPage).toHaveBeenCalledTimes(2); // init + clearFilter
   }));
 
   // ── Helper methods ──────────────────────────────────────────────────

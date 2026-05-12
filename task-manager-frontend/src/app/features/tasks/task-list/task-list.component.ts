@@ -18,13 +18,14 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCardModule } from '@angular/material/card';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { finalize } from 'rxjs';
 
 import { TaskService } from '../../../core/services/task.service';
 import { UserService } from '../../../core/services/user.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Task, TaskFilter, TaskPriority, TaskStatus } from '../../../core/models/task.model';
-import { User } from '../../../core/models/user.model';
+import { UserPicker } from '../../../core/models/user.model';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog.component';
 import { DateMaskDirective } from '../../../shared/directives/date-mask.directive';
 
@@ -51,6 +52,7 @@ import { DateMaskDirective } from '../../../shared/directives/date-mask.directiv
     MatProgressSpinnerModule,
     MatTooltipModule,
     MatCardModule,
+    MatPaginatorModule,
     DateMaskDirective,
   ],
   templateUrl: './task-list.component.html',
@@ -58,10 +60,13 @@ import { DateMaskDirective } from '../../../shared/directives/date-mask.directiv
 })
 export class TaskListComponent implements OnInit {
 
-  readonly loading     = signal(false);
-  readonly users       = signal<User[]>([]);
-  readonly dataSource  = new MatTableDataSource<Task>([]);
-  readonly currentUser = this.authService.currentUser;
+  readonly loading         = signal(false);
+  readonly users           = signal<UserPicker[]>([]);
+  readonly dataSource      = new MatTableDataSource<Task>([]);
+  readonly currentUser     = this.authService.currentUser;
+  readonly totalElements   = signal(0);
+  readonly pageIndex       = signal(0);
+  readonly pageSize        = signal(20);
 
   readonly displayedColumns = ['title', 'priority', 'status', 'assignee', 'createdBy', 'dueDate', 'actions'];
 
@@ -98,12 +103,7 @@ export class TaskListComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.userService.getAll().subscribe(users => this.users.set(users));
-
-    // Pre-fill createdById with the logged-in user — immutable in the filter
-    const uid = this.currentUser()?.userId ?? null;
-    this.filterForm.patchValue({ createdById: uid });
-
+    this.userService.getPicker().subscribe(users => this.users.set(users));
     this.loadTasks();
   }
 
@@ -120,26 +120,31 @@ export class TaskListComponent implements OnInit {
     if (fv.createdById != null) filter.createdById = fv.createdById;
     if (fv.dueDateUntil)        filter.dueDateUntil = this.formatDate(fv.dueDateUntil);
 
-    this.taskService.getAll(filter)
+    this.taskService.getPage(filter, this.pageIndex(), this.pageSize())
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: tasks => {
-          // Default view: hide COMPLETED and CANCELLED unless status is explicitly filtered
-          const visible = fv.status
-            ? tasks
-            : tasks.filter(t => t.status !== 'COMPLETED' && t.status !== 'CANCELLED');
-          this.dataSource.data = visible;
+        next: page => {
+          this.totalElements.set(page.totalElements);
+          this.dataSource.data = page.content;
         },
         error: () => this.snackBar.open('Erro ao carregar tarefas.', 'OK', { duration: 3000 }),
       });
   }
 
-  applyFilter(): void { this.loadTasks(); }
+  applyFilter(): void {
+    this.pageIndex.set(0);
+    this.loadTasks();
+  }
+
+  onPage(ev: PageEvent): void {
+    this.pageIndex.set(ev.pageIndex);
+    this.pageSize.set(ev.pageSize);
+    this.loadTasks();
+  }
 
   clearFilter(): void {
     this.filterForm.reset();
-    // Always keep createdById as the logged-in user
-    this.filterForm.patchValue({ createdById: this.currentUser()?.userId ?? null });
+    this.pageIndex.set(0);
     this.loadTasks();
   }
 
