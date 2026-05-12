@@ -9,6 +9,7 @@ Sistema completo de gerenciamento de tarefas com arquitetura moderna, utilizando
 ```text
 TaskManagerApp
  ┣ docker-compose.yml               # Orquestra postgres + api + frontend
+ ┣ .github/workflows/               # CI (Maven + npm test)
  ┣ task-manager-api/                # Backend Spring Boot
  ┃ ┣ src/main/java/com/taskmanager
  ┃ ┃ ┣ controller                   # AuthController, TaskController, UserController
@@ -16,13 +17,14 @@ TaskManagerApp
  ┃ ┃ ┃ ┣ AuthService / TaskService (interfaces)
  ┃ ┃ ┃ ┗ impl                       # AuthServiceImpl, TaskServiceImpl
  ┃ ┃ ┣ repository                   # TaskRepository (JpaSpecificationExecutor), UserRepository
- ┃ ┃ ┣ dto                          # Request / Response / Filter / Error records
+ ┃ ┃ ┣ dto                          # Request / Response / Filter / PagedTasksResponse / UserPickerResponse / Error records
+ ┃ ┣ resources/db/migration       # Flyway (schema versionado)
  ┃ ┃ ┣ entity                       # User, Task, Role, TaskPriority, TaskStatus
  ┃ ┃ ┣ config                       # SecurityConfig
  ┃ ┃ ┣ security                     # JwtService, JwtAuthenticationFilter, CustomUserDetailsService
  ┃ ┃ ┣ specification                # TaskSpecification (filtros dinâmicos via JPA Criteria)
  ┃ ┃ ┗ exception                    # ResourceNotFoundException, BusinessException, GlobalExceptionHandler
- ┃ ┣ src/test                       # 9 suites · 51 testes (JUnit 5 + Mockito)
+ ┃ ┣ src/test                       # Suites JUnit 5 + Mockito (ver secção Testes)
  ┃ ┣ pom.xml
  ┃ ┣ Dockerfile
  ┃ ┗ .dockerignore
@@ -66,7 +68,10 @@ TaskManagerApp
 | Maven | 3.9.9 |
 | JUnit 5 + Mockito | 5.10.x |
 | PostgreSQL | 16 |
+| Flyway | (via Spring Boot BOM) |
 | H2 (testes) | — |
+| Spring Boot Actuator | 3.3.x |
+| Springdoc OpenAPI (Swagger UI) | 2.6.x |
 | Docker | — |
 
 ### Frontend
@@ -93,13 +98,22 @@ TaskManagerApp
 
 > Todos os demais endpoints exigem o header `Authorization: Bearer <token>`.
 
+### Visibilidade e permissões (tarefas)
+
+| Contexto | Quem pode |
+|----------|-----------|
+| Listar / ver detalhe (`GET /api/tasks`, `GET /api/tasks/{id}`) | **Criador** ou **responsável** da tarefa; **ADMIN** vê todas. |
+| Atualizar / excluir (`PUT`, `DELETE`) | **Criador** ou **ADMIN** (inalterado). |
+| Iniciar (`PATCH …/start`) | **Responsável** ou **ADMIN** (inalterado). |
+| Concluir / cancelar (`PATCH …/complete`, `…/cancel`) | **Criador**, **responsável** ou **ADMIN**. |
+
 ### Tarefas
 
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
 | `POST` | `/api/tasks` | Cria uma nova tarefa |
-| `GET` | `/api/tasks` | Lista tarefas com filtros opcionais |
-| `GET` | `/api/tasks/{id}` | Busca tarefa por ID |
+| `GET` | `/api/tasks` | Lista **paginada** tarefas visíveis ao utilizador, com filtros opcionais (JSON: `content`, `totalElements`, `totalPages`, `number`, `size`) |
+| `GET` | `/api/tasks/{id}` | Busca tarefa por ID (se o utilizador tiver permissão de leitura) |
 | `PUT` | `/api/tasks/{id}` | Atualiza tarefa (criador ou ADMIN) |
 | `DELETE` | `/api/tasks/{id}` | Remove tarefa (criador ou ADMIN) |
 | `PATCH` | `/api/tasks/{id}/start` | Inicia a tarefa |
@@ -110,28 +124,48 @@ TaskManagerApp
 
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
-| `GET` | `/api/users` | Lista todos os usuários |
-| `GET` | `/api/users/{id}` | Busca usuário por ID |
+| `GET` | `/api/users/picker` | Lista mínima (`id`, `name`) para seletores — **qualquer utilizador autenticado** |
+| `GET` | `/api/users` | Lista completa de utilizadores — **apenas ADMIN** |
+| `GET` | `/api/users/{id}` | Perfil completo — **próprio utilizador** ou **ADMIN** |
+
+### Operação e documentação (API)
+
+| Recurso | URL / notas |
+|---------|-------------|
+| Health (sem auth) | `GET /actuator/health` |
+| OpenAPI | `GET /v3/api-docs` |
+| Swagger UI (sem auth) | `http://localhost:8080/swagger-ui/index.html` (caminho típico do Springdoc) |
+
+### Base de dados
+
+- Migrações **Flyway** em `task-manager-api/src/main/resources/db/migration/` (`V1__init_schema.sql`).
+- Em produção/desenvolvimento com PostgreSQL, `spring.jpa.hibernate.ddl-auto` está em **`validate`** (o schema deve acompanhar o Flyway).
+- **Nota:** volumes Docker antigos criados só com Hibernate `update` podem conflitar com a primeira migração; nesse caso use `docker-compose down -v` uma vez ou faça baseline/repair manual do Flyway.
 
 ---
 
-## Filtros de tarefas (`GET /api/tasks`)
+## Filtros e paginação (`GET /api/tasks`)
 
-Todos os parâmetros são opcionais e podem ser combinados livremente:
+Todos os parâmetros de filtro são opcionais e podem ser combinados. A resposta é um objeto paginado (não um array simples).
 
 | Parâmetro | Tipo | Comportamento |
 |-----------|------|---------------|
+| `page` | `number` | Índice da página (base 0); predefinição `0` |
+| `size` | `number` | Tamanho da página; predefinição `20`; máximo `100` |
 | `title` | `string` | Busca parcial, case-insensitive |
 | `description` | `string` | Busca parcial, case-insensitive |
 | `assigneeId` | `number` | Filtra pelo responsável |
 | `createdById` | `number` | Filtra pelo criador |
 | `priority` | `HIGH \| MEDIUM \| LOW` | Filtra por prioridade |
 | `status` | `TODO \| IN_PROGRESS \| COMPLETED \| CANCELLED` | Filtra por situação |
+| `hideFinished` | `boolean` | Predefinição `true`. Com `true` e **sem** `status`, exclui `COMPLETED` e `CANCELLED`. Envie `false` quando filtrar por `status` (ex.: listar concluídas). |
 | `dueDateUntil` | `dd/MM/yyyy` | **Regra "até:"** — retorna apenas tarefas **não concluídas e não canceladas** cujo prazo seja ≤ à data informada |
 
-**Exemplo:**
+**Exemplos:**
 ```
+GET /api/tasks?page=0&size=20&priority=HIGH
 GET /api/tasks?dueDateUntil=31/12/2026&priority=HIGH
+GET /api/tasks?status=COMPLETED&hideFinished=false
 ```
 
 ---
@@ -160,16 +194,16 @@ mvn test
 
 | Classe de teste | Tipo | Testes |
 |-----------------|------|--------|
-| `AuthControllerTest` | `@WebMvcTest` + JWT mock | 5 |
-| `TaskControllerTest` | `@WebMvcTest` + JWT mock | 13 |
-| `UserControllerTest` | `@WebMvcTest` + JWT mock | 5 |
-| `AuthServiceImplTest` | Unitário (Mockito) | 6 |
-| `TaskServiceImplTest` | Unitário (Mockito) | 16 |
-| `GlobalExceptionHandlerTest` | Unitário | 3 |
+| `AuthControllerTest` | `@WebMvcTest` + JWT mock | 8 |
+| `TaskControllerTest` | `@WebMvcTest` + JWT mock | 26 |
+| `UserControllerTest` | `@WebMvcTest` + JWT mock | 9 |
+| `AuthServiceImplTest` | Unitário (Mockito) | 4 |
+| `TaskServiceImplTest` | Unitário (Mockito) | 31 |
+| `GlobalExceptionHandlerTest` | Unitário | 10 |
 | `CustomUserDetailsServiceTest` | Unitário | 2 |
-| `JwtServiceTest` | Unitário | 3 |
+| `JwtServiceTest` | Unitário | 6 |
 | `TaskManagerApiApplicationTests` | Smoke test | 1 |
-| **Total** | | **54** |
+| **Total** | | **97** |
 
 ### Frontend
 
@@ -181,8 +215,8 @@ npm test
 | Suite de teste | Testes |
 |----------------|--------|
 | `AuthService` | 6 |
-| `TaskService` | 5 |
-| `UserService` | 3 |
+| `TaskService` | 6 |
+| `UserService` | 4 |
 | `authInterceptor` | 2 |
 | `authGuard` | 2 |
 | `guestGuard` | 2 |
@@ -195,7 +229,13 @@ npm test
 | `TaskShellComponent` | 3 |
 | `TaskFormComponent` | 8 |
 | `TaskListComponent` | 9 |
-| **Total** | **84** |
+| **Total** | **85** |
+
+---
+
+## CI (GitHub Actions)
+
+No repositório existe o workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml): em cada `push` / `pull_request` executa `mvn test` na API e `npm ci` + `npm test -- --ci` no frontend.
 
 ---
 
