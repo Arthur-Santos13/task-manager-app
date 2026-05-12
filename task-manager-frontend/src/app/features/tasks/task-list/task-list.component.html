@@ -2,7 +2,7 @@
   <header class="page-header">
     <div class="header-left">
       <h1 class="page-title">Tarefas</h1>
-      <span class="task-count">{{ dataSource.data.length }} tarefa(s)</span>
+      <span class="task-count">{{ totalElements() }} tarefa(s)</span>
     </div>
     <button mat-flat-button class="btn-new" routerLink="/tasks/new">
       <mat-icon>add</mat-icon>
@@ -61,11 +61,15 @@
             </mat-select>
           </mat-form-field>
 
-          <!-- Criado por (somente leitura — sempre o usuário logado) -->
+          <!-- Criado por (opcional) -->
           <mat-form-field appearance="outline" class="filter-field">
             <mat-label>Criado por</mat-label>
-            <input matInput [value]="currentUser()?.name ?? ''" readonly class="readonly-input" />
-            <mat-icon matSuffix class="readonly-icon">lock</mat-icon>
+            <mat-select formControlName="createdById">
+              <mat-option [value]="null">Qualquer</mat-option>
+              @for (user of users(); track user.id) {
+                <mat-option [value]="user.id">{{ user.name }}</mat-option>
+              }
+            </mat-select>
           </mat-form-field>
 
           <!-- Prazo até -->
@@ -214,6 +218,15 @@
       </tr>
 
     </mat-table>
+
+    <mat-paginator
+      [length]="totalElements()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="[10, 20, 50]"
+      showFirstLastButtons
+      (page)="onPage($event)"
+    />
   }
 
 </div>

@@ -35,30 +35,44 @@ describe('TaskService', () => {
     expect(service).toBeTruthy();
   });
 
-  // ── getAll ──────────────────────────────────────────────────────────
+  // ── getPage ─────────────────────────────────────────────────────────
 
-  it('getAll — without filter should GET /api/tasks', () => {
-    service.getAll().subscribe(tasks => {
-      expect(tasks).toHaveLength(1);
-      expect(tasks[0].title).toBe('Test Task');
+  it('getPage — without filter should GET /api/tasks with page params', () => {
+    service.getPage(undefined, 0, 20).subscribe(page => {
+      expect(page.content).toHaveLength(1);
+      expect(page.totalElements).toBe(1);
+      expect(page.content[0].title).toBe('Test Task');
     });
 
-    const req = httpMock.expectOne('/api/tasks');
+    const req = httpMock.expectOne(r =>
+      r.url === '/api/tasks'
+      && r.params.get('page') === '0'
+      && r.params.get('size') === '20',
+    );
     expect(req.request.method).toBe('GET');
-    req.flush([mockTask]);
+    req.flush({
+      content: [mockTask],
+      totalElements: 1,
+      totalPages: 1,
+      number: 0,
+      size: 20,
+    });
   });
 
-  it('getAll — with filter should set query params', () => {
-    service.getAll({ title: 'bug', priority: 'HIGH', status: 'TODO' }).subscribe();
+  it('getPage — with filter should set query params and hideFinished=false when status set', () => {
+    service.getPage({ title: 'bug', priority: 'HIGH', status: 'TODO' }, 1, 10).subscribe();
 
     const req = httpMock.expectOne(r =>
       r.url === '/api/tasks'
       && r.params.get('title') === 'bug'
       && r.params.get('priority') === 'HIGH'
-      && r.params.get('status') === 'TODO',
+      && r.params.get('status') === 'TODO'
+      && r.params.get('hideFinished') === 'false'
+      && r.params.get('page') === '1'
+      && r.params.get('size') === '10',
     );
     expect(req.request.method).toBe('GET');
-    req.flush([]);
+    req.flush({ content: [], totalElements: 0, totalPages: 0, number: 1, size: 10 });
   });
 
   // ── getById ─────────────────────────────────────────────────────────

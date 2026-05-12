@@ -17,7 +17,7 @@ import { TaskService } from '../../../core/services/task.service';
 import { UserService } from '../../../core/services/user.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { TaskPriority, TaskRequest, TaskStatus } from '../../../core/models/task.model';
-import { User } from '../../../core/models/user.model';
+import { UserPicker } from '../../../core/models/user.model';
 import { DateMaskDirective } from '../../../shared/directives/date-mask.directive';
 
 @Component({
@@ -48,7 +48,7 @@ export class TaskFormComponent implements OnInit {
 
   readonly loading      = signal(false);
   readonly submitting   = signal(false);
-  readonly users        = signal<User[]>([]);
+  readonly users        = signal<UserPicker[]>([]);
   readonly currentUser  = this.authService.currentUser;
 
   /** Used as [min] on the datepicker — no past dates allowed on creation */
@@ -87,7 +87,7 @@ export class TaskFormComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.userService.getAll().subscribe(users => this.users.set(users));
+    this.userService.getPicker().subscribe(users => this.users.set(users));
 
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {

@@ -1,5 +1,6 @@
 package com.taskmanager.controller;
 
+import com.taskmanager.dto.PagedTasksResponse;
 import com.taskmanager.dto.TaskFilterRequest;
 import com.taskmanager.dto.TaskRequest;
 import com.taskmanager.dto.TaskResponse;
@@ -9,6 +10,8 @@ import com.taskmanager.entity.User;
 import com.taskmanager.service.TaskService;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -24,11 +27,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/tasks")
 public class TaskController {
+
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final TaskService taskService;
 
@@ -61,7 +65,7 @@ public class TaskController {
     // -------------------------------------------------------------------------
 
     @GetMapping
-    public ResponseEntity<List<TaskResponse>> getTasks(
+    public ResponseEntity<PagedTasksResponse> getTasks(
             @RequestParam(required = false) String title,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) Long assigneeId,
@@ -69,12 +73,20 @@ public class TaskController {
             @RequestParam(required = false) TaskPriority priority,
             @RequestParam(required = false) TaskStatus status,
             @RequestParam(required = false)
-            @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dueDateUntil) {
+            @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dueDateUntil,
+            @RequestParam(defaultValue = "true") boolean hideFinished,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal User currentUser) {
+
+        int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        int safePage = Math.max(page, 0);
+        Pageable pageable = PageRequest.of(safePage, safeSize);
 
         TaskFilterRequest filter = new TaskFilterRequest(
-                title, description, assigneeId, createdById, priority, status, dueDateUntil);
+                title, description, assigneeId, createdById, priority, status, dueDateUntil, hideFinished);
 
-        return ResponseEntity.ok(taskService.getTasks(filter));
+        return ResponseEntity.ok(taskService.getTasks(filter, currentUser, pageable));
     }
 
     // -------------------------------------------------------------------------
@@ -82,8 +94,11 @@ public class TaskController {
     // -------------------------------------------------------------------------
 
     @GetMapping("/{id}")
-    public ResponseEntity<TaskResponse> getTaskById(@PathVariable Long id) {
-        return ResponseEntity.ok(taskService.getTaskById(id));
+    public ResponseEntity<TaskResponse> getTaskById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User currentUser) {
+
+        return ResponseEntity.ok(taskService.getTaskById(id, currentUser));
     }
 
     // -------------------------------------------------------------------------

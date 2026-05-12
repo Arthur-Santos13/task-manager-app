@@ -1,5 +1,6 @@
 package com.taskmanager.service.impl;
 
+import com.taskmanager.dto.PagedTasksResponse;
 import com.taskmanager.dto.TaskFilterRequest;
 import com.taskmanager.dto.TaskRequest;
 import com.taskmanager.dto.TaskResponse;
@@ -15,6 +16,9 @@ import com.taskmanager.repository.TaskRepository;
 import com.taskmanager.repository.UserRepository;
 import com.taskmanager.service.TaskService;
 import com.taskmanager.specification.TaskSpecification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,12 +64,19 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TaskResponse> getTasks(TaskFilterRequest filter) {
-        return taskRepository
-                .findAll(TaskSpecification.withFilters(filter))
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    public PagedTasksResponse getTasks(TaskFilterRequest filter, User currentUser, Pageable pageable) {
+        Specification<Task> spec = Specification
+                .where(TaskSpecification.withFilters(filter))
+                .and(TaskSpecification.visibleToUser(currentUser));
+        Page<Task> page = taskRepository.findAll(spec, pageable);
+        List<TaskResponse> content = page.getContent().stream().map(this::toResponse).toList();
+        return new PagedTasksResponse(
+                content,
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.getNumber(),
+                page.getSize()
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -74,8 +85,10 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
-    public TaskResponse getTaskById(Long id) {
-        return toResponse(findTaskOrThrow(id));
+    public TaskResponse getTaskById(Long id, User currentUser) {
+        Task task = findTaskOrThrow(id);
+        requireParticipationOrAdmin(task, currentUser, "view");
+        return toResponse(task);
     }
 
     // -------------------------------------------------------------------------
@@ -123,6 +136,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public TaskResponse completeTask(Long id, User currentUser) {
         Task task = findTaskOrThrow(id);
+        requireParticipationOrAdmin(task, currentUser, "complete");
 
         if (task.getStatus() == TaskStatus.COMPLETED) {
             throw new BusinessException("Task is already completed.");
@@ -142,6 +156,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public TaskResponse cancelTask(Long id, User currentUser) {
         Task task = findTaskOrThrow(id);
+        requireParticipationOrAdmin(task, currentUser, "cancel");
 
         if (task.getStatus() == TaskStatus.CANCELLED) {
             throw new BusinessException("Task is already cancelled.");
@@ -184,6 +199,21 @@ public class TaskServiceImpl implements TaskService {
     private Task findTaskOrThrow(Long id) {
         return taskRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Task", id));
+    }
+
+    /**
+     * Creator, assignee, or ADMIN may read or change task lifecycle (complete/cancel).
+     */
+    private void requireParticipationOrAdmin(Task task, User currentUser, String action) {
+        if (currentUser.getRole() == Role.ADMIN) {
+            return;
+        }
+        boolean isCreator = task.getCreatedBy().getId().equals(currentUser.getId());
+        boolean isAssignee = task.getAssignee().getId().equals(currentUser.getId());
+        if (!isCreator && !isAssignee) {
+            throw new AccessDeniedException(
+                    "You do not have permission to " + action + " this task.");
+        }
     }
 
     /**

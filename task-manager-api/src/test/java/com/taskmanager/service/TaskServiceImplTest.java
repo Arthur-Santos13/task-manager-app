@@ -1,5 +1,6 @@
 package com.taskmanager.service;
 
+import com.taskmanager.dto.PagedTasksResponse;
 import com.taskmanager.dto.TaskFilterRequest;
 import com.taskmanager.dto.TaskRequest;
 import com.taskmanager.dto.TaskResponse;
@@ -21,6 +22,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
@@ -115,13 +119,17 @@ class TaskServiceImplTest {
     @Test
     @DisplayName("getTasks — delegates to JPA spec and maps results")
     void getTasks_returnsFilteredList() {
-        when(taskRepository.findAll(any(Specification.class))).thenReturn(List.of(task));
+        when(taskRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(task)));
 
-        List<TaskResponse> result = taskService.getTasks(
-                new TaskFilterRequest(null, null, null, null, null, null, null));
+        PagedTasksResponse result = taskService.getTasks(
+                new TaskFilterRequest(null, null, null, null, null, null, null, true),
+                creator,
+                PageRequest.of(0, 20));
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).title()).isEqualTo("Test Task");
+        assertThat(result.content()).hasSize(1);
+        assertThat(result.content().get(0).title()).isEqualTo("Test Task");
+        assertThat(result.totalElements()).isEqualTo(1);
     }
 
     // -------------------------------------------------------------------------
@@ -133,7 +141,7 @@ class TaskServiceImplTest {
     void getTaskById_found_returnsResponse() {
         when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
 
-        assertThat(taskService.getTaskById(1L).id()).isEqualTo(1L);
+        assertThat(taskService.getTaskById(1L, creator).id()).isEqualTo(1L);
     }
 
     @Test
@@ -141,13 +149,19 @@ class TaskServiceImplTest {
     void getTaskById_notFound_throwsResourceNotFoundException() {
         when(taskRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> taskService.getTaskById(99L))
+        assertThatThrownBy(() -> taskService.getTaskById(99L, creator))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // -------------------------------------------------------------------------
-    // updateTask
-    // -------------------------------------------------------------------------
+    @Test
+    @DisplayName("getTaskById — user with no participation throws AccessDeniedException")
+    void getTaskById_stranger_throwsAccessDeniedException() {
+        User stranger = User.builder().id(3L).role(Role.USER).build();
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> taskService.getTaskById(1L, stranger))
+                .isInstanceOf(AccessDeniedException.class);
+    }
 
     @Test
     @DisplayName("updateTask — creator may update their own task")
@@ -244,6 +258,29 @@ class TaskServiceImplTest {
     // -------------------------------------------------------------------------
 
     @Test
+    @DisplayName("completeTask — assignee may complete")
+    void completeTask_asAssignee_success() {
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
+        when(taskRepository.save(task)).thenReturn(task);
+
+        TaskResponse response = taskService.completeTask(1L, assignee);
+
+        assertThat(response.status()).isEqualTo(TaskStatus.COMPLETED);
+        verify(taskRepository).save(task);
+    }
+
+    @Test
+    @DisplayName("completeTask — unrelated user throws AccessDeniedException")
+    void completeTask_stranger_throwsAccessDeniedException() {
+        User stranger = User.builder().id(3L).role(Role.USER).build();
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> taskService.completeTask(1L, stranger))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
     @DisplayName("completeTask — IN_PROGRESS task becomes COMPLETED")
     void completeTask_success_changesStatusToCompleted() {
         when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
@@ -301,6 +338,17 @@ class TaskServiceImplTest {
     // -------------------------------------------------------------------------
     // cancelTask
     // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("cancelTask — unrelated user throws AccessDeniedException")
+    void cancelTask_stranger_throwsAccessDeniedException() {
+        User stranger = User.builder().id(3L).role(Role.USER).build();
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> taskService.cancelTask(1L, stranger))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(taskRepository, never()).save(any(Task.class));
+    }
 
     @Test
     @DisplayName("cancelTask — IN_PROGRESS task becomes CANCELLED")

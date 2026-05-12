@@ -32,7 +32,13 @@ public record TaskFilterRequest(
          * Returns tasks whose {@code dueDate} is on or before this date
          * AND whose status is neither COMPLETED nor CANCELLED.
          */
-        @JsonFormat(pattern = "dd/MM/yyyy") LocalDate dueDateUntil
+        @JsonFormat(pattern = "dd/MM/yyyy") LocalDate dueDateUntil,
+
+        /**
+         * When {@code true} and {@code status} is not set, excludes COMPLETED and CANCELLED rows.
+         * Set to {@code false} when the client applies an explicit {@code status} filter.
+         */
+        boolean hideFinished
 ) {
 }
 

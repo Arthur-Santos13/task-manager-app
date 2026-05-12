@@ -1,6 +1,7 @@
 package com.taskmanager.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taskmanager.dto.PagedTasksResponse;
 import com.taskmanager.dto.TaskResponse;
 import com.taskmanager.dto.UserResponse;
 import com.taskmanager.entity.Role;
@@ -167,33 +168,36 @@ class TaskControllerTest {
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("GET /api/tasks — no filters returns 200 with list")
+    @DisplayName("GET /api/tasks — no filters returns 200 with paged content")
     void getTasks_noFilters_returns200WithList() throws Exception {
-        when(taskService.getTasks(any())).thenReturn(List.of(sampleResponse));
+        when(taskService.getTasks(any(), any(), any())).thenReturn(
+                new PagedTasksResponse(List.of(sampleResponse), 1, 1, 0, 20));
 
         mockMvc.perform(get(TASKS_URL).header("Authorization", AUTH_HEADER))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].title").value("Test Task"));
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].title").value("Test Task"));
     }
 
     @Test
     @DisplayName("GET /api/tasks — with status and priority filters returns 200")
     void getTasks_withFilters_returns200() throws Exception {
-        when(taskService.getTasks(any())).thenReturn(List.of(sampleResponse));
+        when(taskService.getTasks(any(), any(), any())).thenReturn(
+                new PagedTasksResponse(List.of(sampleResponse), 1, 1, 0, 20));
 
         mockMvc.perform(get(TASKS_URL)
                         .header("Authorization", AUTH_HEADER)
                         .param("status", "IN_PROGRESS")
                         .param("priority", "HIGH"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].priority").value("HIGH"));
+                .andExpect(jsonPath("$.content[0].priority").value("HIGH"));
     }
 
     @Test
     @DisplayName("GET /api/tasks — 'until:' dueDateUntil filter returns 200")
     void getTasks_withDueDateUntilFilter_returns200() throws Exception {
-        when(taskService.getTasks(any())).thenReturn(List.of(sampleResponse));
+        when(taskService.getTasks(any(), any(), any())).thenReturn(
+                new PagedTasksResponse(List.of(sampleResponse), 1, 1, 0, 20));
 
         mockMvc.perform(get(TASKS_URL)
                         .header("Authorization", AUTH_HEADER)
@@ -208,7 +212,7 @@ class TaskControllerTest {
     @Test
     @DisplayName("GET /api/tasks/{id} — existing task returns 200")
     void getTaskById_found_returns200() throws Exception {
-        when(taskService.getTaskById(1L)).thenReturn(sampleResponse);
+        when(taskService.getTaskById(eq(1L), any())).thenReturn(sampleResponse);
 
         mockMvc.perform(get(TASKS_URL + "/1").header("Authorization", AUTH_HEADER))
                 .andExpect(status().isOk())
@@ -216,9 +220,20 @@ class TaskControllerTest {
     }
 
     @Test
+    @DisplayName("GET /api/tasks/{id} — access denied returns 403")
+    void getTaskById_accessDenied_returns403() throws Exception {
+        when(taskService.getTaskById(eq(1L), any()))
+                .thenThrow(new AccessDeniedException("You do not have permission to view this task."));
+
+        mockMvc.perform(get(TASKS_URL + "/1").header("Authorization", AUTH_HEADER))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+    }
+
+    @Test
     @DisplayName("GET /api/tasks/{id} — unknown id returns 404 with error body")
     void getTaskById_notFound_returns404() throws Exception {
-        when(taskService.getTaskById(99L))
+        when(taskService.getTaskById(eq(99L), any()))
                 .thenThrow(new ResourceNotFoundException("Task", 99L));
 
         mockMvc.perform(get(TASKS_URL + "/99").header("Authorization", AUTH_HEADER))
@@ -320,6 +335,17 @@ class TaskControllerTest {
     }
 
     @Test
+    @DisplayName("PATCH /api/tasks/{id}/complete — access denied returns 403")
+    void completeTask_accessDenied_returns403() throws Exception {
+        when(taskService.completeTask(eq(1L), any()))
+                .thenThrow(new AccessDeniedException("You do not have permission to complete this task."));
+
+        mockMvc.perform(patch(TASKS_URL + "/1/complete").header("Authorization", AUTH_HEADER))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+    }
+
+    @Test
     @DisplayName("PATCH /api/tasks/{id}/complete — already completed returns 409")
     void completeTask_alreadyCompleted_returns409() throws Exception {
         when(taskService.completeTask(eq(1L), any()))
@@ -344,6 +370,17 @@ class TaskControllerTest {
     // -------------------------------------------------------------------------
     // PATCH /api/tasks/{id}/cancel
     // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("PATCH /api/tasks/{id}/cancel — access denied returns 403")
+    void cancelTask_accessDenied_returns403() throws Exception {
+        when(taskService.cancelTask(eq(1L), any()))
+                .thenThrow(new AccessDeniedException("You do not have permission to cancel this task."));
+
+        mockMvc.perform(patch(TASKS_URL + "/1/cancel").header("Authorization", AUTH_HEADER))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+    }
 
     @Test
     @DisplayName("PATCH /api/tasks/{id}/cancel — returns 200 with CANCELLED status")

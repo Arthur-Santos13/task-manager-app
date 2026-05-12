@@ -1,10 +1,15 @@
 package com.taskmanager.controller;
 
+import com.taskmanager.dto.UserPickerResponse;
 import com.taskmanager.dto.UserResponse;
+import com.taskmanager.entity.Role;
 import com.taskmanager.entity.User;
+import com.taskmanager.exception.AccessDeniedException;
 import com.taskmanager.exception.ResourceNotFoundException;
 import com.taskmanager.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,11 +28,24 @@ public class UserController {
     }
 
     // -------------------------------------------------------------------------
-    // GET /api/users
-    // Lists all registered users — useful for the assignee picker on the UI.
+    // GET /api/users/picker  —  id + name only (any authenticated user)
+    // Must be declared before /{id} so "picker" is not parsed as a numeric id.
+    // -------------------------------------------------------------------------
+
+    @GetMapping("/picker")
+    public ResponseEntity<List<UserPickerResponse>> listPicker() {
+        List<UserPickerResponse> users = userRepository.findAll().stream()
+                .map(u -> new UserPickerResponse(u.getId(), u.getName()))
+                .toList();
+        return ResponseEntity.ok(users);
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/users  —  full list (ADMIN only)
     // -------------------------------------------------------------------------
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponse>> listUsers() {
         List<UserResponse> users = userRepository.findAll()
                 .stream()
@@ -41,7 +59,14 @@ public class UserController {
     // -------------------------------------------------------------------------
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+    public ResponseEntity<UserResponse> getUserById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User currentUser) {
+
+        if (currentUser.getRole() != Role.ADMIN && !currentUser.getId().equals(id)) {
+            throw new AccessDeniedException("You can only view your own user profile.");
+        }
+
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
         return ResponseEntity.ok(toResponse(user));
@@ -61,4 +86,3 @@ public class UserController {
         );
     }
 }
-

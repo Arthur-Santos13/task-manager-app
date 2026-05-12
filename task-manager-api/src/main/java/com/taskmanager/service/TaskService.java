@@ -1,22 +1,28 @@
 package com.taskmanager.service;
 
+import com.taskmanager.dto.PagedTasksResponse;
 import com.taskmanager.dto.TaskFilterRequest;
 import com.taskmanager.dto.TaskRequest;
 import com.taskmanager.dto.TaskResponse;
 import com.taskmanager.entity.User;
-
-import java.util.List;
+import org.springframework.data.domain.Pageable;
 
 public interface TaskService {
 
     /** Creates a new task. The authenticated user is recorded as the creator. */
     TaskResponse createTask(TaskRequest request, User currentUser);
 
-    /** Returns all tasks that match the given filter. All fields are optional. */
-    List<TaskResponse> getTasks(TaskFilterRequest filter);
+    /**
+     * Returns a page of tasks matching the filter and visible to the current user
+     * (creator or assignee, or any task if {@code currentUser} is an ADMIN).
+     */
+    PagedTasksResponse getTasks(TaskFilterRequest filter, User currentUser, Pageable pageable);
 
-    /** Returns a single task by id. Throws ResourceNotFoundException if not found. */
-    TaskResponse getTaskById(Long id);
+    /**
+     * Returns a single task by id if the user may see it.
+     * Throws ResourceNotFoundException if not found, AccessDeniedException if forbidden.
+     */
+    TaskResponse getTaskById(Long id, User currentUser);
 
     /**
      * Updates an existing task.

@@ -1,8 +1,10 @@
 package com.taskmanager.specification;
 
 import com.taskmanager.dto.TaskFilterRequest;
+import com.taskmanager.entity.Role;
 import com.taskmanager.entity.Task;
 import com.taskmanager.entity.TaskStatus;
+import com.taskmanager.entity.User;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -61,9 +63,12 @@ public class TaskSpecification {
                 predicates.add(cb.equal(root.get("priority"), filter.priority()));
             }
 
-            // Status — explicit status filter
+            // Status — explicit status filter (takes precedence over hideFinished)
             if (filter.status() != null) {
                 predicates.add(cb.equal(root.get("status"), filter.status()));
+            } else if (filter.hideFinished()) {
+                predicates.add(cb.notEqual(root.get("status"), TaskStatus.COMPLETED));
+                predicates.add(cb.notEqual(root.get("status"), TaskStatus.CANCELLED));
             }
 
             // "Até:" deadline filter — only when dueDateUntil is provided
@@ -76,7 +81,26 @@ public class TaskSpecification {
                 predicates.add(cb.notEqual(root.get("status"), TaskStatus.CANCELLED));
             }
 
+            if (predicates.isEmpty()) {
+                return cb.conjunction();
+            }
             return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    /**
+     * Non-{@link Role#ADMIN} users only see tasks they created or are assigned to.
+     * Admins see every task (other filters still apply).
+     */
+    public static Specification<Task> visibleToUser(User viewer) {
+        return (root, query, cb) -> {
+            if (viewer.getRole() == Role.ADMIN) {
+                return cb.conjunction();
+            }
+            return cb.or(
+                    cb.equal(root.get("createdBy").get("id"), viewer.getId()),
+                    cb.equal(root.get("assignee").get("id"), viewer.getId())
+            );
         };
     }
 }

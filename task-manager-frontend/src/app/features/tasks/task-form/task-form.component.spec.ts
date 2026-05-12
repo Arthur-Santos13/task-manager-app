@@ -39,7 +39,7 @@ describe('TaskFormComponent', () => {
       providers: [
         provideRouter([]),
         { provide: TaskService, useValue: taskServiceMock },
-        { provide: UserService, useValue: { getAll: jest.fn().mockReturnValue(of([mockUser])) } },
+        { provide: UserService, useValue: { getPicker: jest.fn().mockReturnValue(of([{ id: 1, name: 'User' }])) } },
         {
           provide: AuthService,
           useValue: { currentUser: signal({ userId: 1, name: 'User', email: 'u@t.com', role: 'USER' }) },
